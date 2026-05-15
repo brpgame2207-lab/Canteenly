@@ -5,7 +5,9 @@ const connectDB = require('./config/db');
 const errorHandler = require('./middleware/error');
 
 // Load env vars
-dotenv.config();
+const path = require('path');
+// Load env vars from root
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // Connect to database
 connectDB();
