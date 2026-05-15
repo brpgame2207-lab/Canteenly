@@ -13,12 +13,6 @@ gsap.registerPlugin(ScrollTrigger);
 const VIDEO_URL =
   'https://res.cloudinary.com/dqz9fw80j/video/upload/q_auto/f_auto/v1778871642/Breakfast_transformation_animati__202605152345_r30f8g.mp4';
 
-const gpuStyle: React.CSSProperties = {
-  willChange: 'transform',
-  transform: 'translate3d(0,0,0)',
-  backfaceVisibility: 'hidden',
-};
-
 export const LandingPage = () => {
   const wrapRef  = useRef<HTMLDivElement>(null);
   const heroRef  = useRef<HTMLDivElement>(null);
@@ -26,7 +20,7 @@ export const LandingPage = () => {
   const textRef  = useRef<HTMLDivElement>(null);
   const rafRef   = useRef<number>(0);
 
-  // ── Lenis wired into GSAP ticker ──────────────────────────────────────────
+  // ── Lenis → GSAP ticker sync ────────────────────────────────────────────────
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.8,
@@ -40,30 +34,28 @@ export const LandingPage = () => {
     return () => { gsap.ticker.remove(onTick); lenis.destroy(); };
   }, []);
 
-  // ── RAF lerp video scrub ───────────────────────────────────────────────────
-  useEffect(() => {
+  // ── All GSAP / ScrollTrigger setup lives here ────────────────────────────────
+  useGSAP(() => {
     const video = videoRef.current;
     if (!video) return;
-    let target = 0, current = 0;
-    const tick = () => {
-      if (video.readyState >= 2 && video.duration) {
-        current += (target - current) * 0.1;
-        if (Math.abs(current - video.currentTime) > 0.001) video.currentTime = current;
-      }
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    ScrollTrigger.create({
-      trigger: heroRef.current,
-      start: 'top top',
-      end: '+=400%',
-      onUpdate: (self) => { if (video.duration) target = self.progress * video.duration; },
-    });
-    return () => cancelAnimationFrame(rafRef.current);
-  }, []);
 
-  // ── GSAP pin + text fade ───────────────────────────────────────────────────
-  useGSAP(() => {
+    // lerp state for butter-smooth video scrubbing
+    let targetTime = 0;
+    let currentTime = 0;
+
+    // RAF loop — lerps video.currentTime toward targetTime every frame
+    const rafTick = () => {
+      if (video.readyState >= 2 && video.duration) {
+        currentTime += (targetTime - currentTime) * 0.1;
+        if (Math.abs(currentTime - video.currentTime) > 0.001) {
+          video.currentTime = currentTime;
+        }
+      }
+      rafRef.current = requestAnimationFrame(rafTick);
+    };
+    rafRef.current = requestAnimationFrame(rafTick);
+
+    // ── Single pinned ScrollTrigger — drives BOTH video scrub & text fade ──
     ScrollTrigger.create({
       trigger: heroRef.current,
       start: 'top top',
@@ -72,48 +64,70 @@ export const LandingPage = () => {
       anticipatePin: 1,
       invalidateOnRefresh: true,
       scrub: true,
-    });
-    gsap.to(textRef.current, {
-      y: -70, opacity: 0, ease: 'power2.out',
-      scrollTrigger: {
-        trigger: heroRef.current,
-        start: 'top top',
-        end: '+=50%',
-        scrub: 2.5,
-        invalidateOnRefresh: true,
+      onUpdate: (self) => {
+        // Video scrub (RAF loop reads targetTime)
+        if (video.duration) {
+          targetTime = self.progress * video.duration;
+        }
+
+        // Text fade: fade out in first 12.5% of pinned scroll
+        const textProgress = Math.min(self.progress / 0.125, 1);
+        if (textRef.current) {
+          textRef.current.style.opacity = String(1 - textProgress);
+          textRef.current.style.transform = `translate3d(0, ${-textProgress * 70}px, 0)`;
+        }
       },
     });
+
+    // ── Section reveal animations ────────────────────────────────────────────
     gsap.utils.toArray<HTMLElement>('.reveal-up').forEach((el) => {
-      gsap.fromTo(el, { y: 50, opacity: 0 }, {
-        y: 0, opacity: 1, duration: 1.2, ease: 'power3.out',
-        scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' },
-      });
+      gsap.fromTo(el,
+        { y: 50, opacity: 0 },
+        {
+          y: 0, opacity: 1, duration: 1.2, ease: 'power3.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 90%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
     });
+
+    return () => cancelAnimationFrame(rafRef.current);
   }, { scope: wrapRef });
 
   return (
     <div ref={wrapRef} className="bg-black text-white selection:bg-orange-500/20">
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
-      <section ref={heroRef} className="relative h-[100svh] w-full overflow-hidden" style={gpuStyle}>
+      <section
+        ref={heroRef}
+        className="relative h-[100svh] w-full overflow-hidden"
+        style={{ willChange: 'transform', transform: 'translate3d(0,0,0)', backfaceVisibility: 'hidden' }}
+      >
         <video
           ref={videoRef}
           src={VIDEO_URL}
           preload="auto"
           muted
           playsInline
-          // Mobile: barely any trim (1.015) — just enough to hide padding
-          // Desktop (sm+): 1.06 to fully hide the wider white bars
+          // Mobile: 1.015 trim | Desktop: 1.06 trim to remove encoded white padding
           className="absolute inset-0 w-full h-full object-cover scale-x-[1.015] sm:scale-x-[1.06]"
           style={{ willChange: 'transform', backfaceVisibility: 'hidden' }}
         />
         {/* Lightweight vignette */}
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)' }} />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)' }}
+        />
 
-        {/* Hero text */}
-        <div ref={textRef} className="absolute inset-0 flex items-center justify-center px-4 sm:px-6"
-          style={{ willChange: 'opacity, transform' }}>
+        {/* Hero text — faded out by onUpdate above */}
+        <div
+          ref={textRef}
+          className="absolute inset-0 flex items-center justify-center px-4 sm:px-6"
+          style={{ willChange: 'opacity, transform' }}
+        >
           <div className="w-full max-w-5xl text-center">
             <motion.div
               initial={{ opacity: 0, y: 40, filter: 'blur(12px)' }}
@@ -289,7 +303,7 @@ export const LandingPage = () => {
           </div>
         </section>
 
-        {/* 7. Footer */}
+        {/* Footer */}
         <footer className="border-t border-white/10 bg-black pt-14 sm:pt-20 pb-8 sm:pb-10">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12 mb-12 sm:mb-16">
