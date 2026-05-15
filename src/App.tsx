@@ -35,11 +35,12 @@ const PageWrapper = ({ children }: { children: React.ReactNode }) => {
 const AppContent = () => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
+  const isLanding = location.pathname === '/';
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen text-white bg-black">
       {!isAdmin && <StudentNavbar />}
-      <main className={isAdmin ? "" : "container mx-auto"}>
+      <main className={isAdmin || isLanding ? "" : "container mx-auto"}>
         <PageWrapper>
           <Routes>
             <Route path="/" element={<LandingPage />} />
