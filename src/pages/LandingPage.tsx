@@ -18,9 +18,11 @@ const VIDEO_URL =
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 
 export const LandingPage = () => {
-  const heroRef  = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const textRef  = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
+  const scene2Ref = useRef<HTMLDivElement>(null);
+  const scene3Ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // ── Kill stale triggers (HMR safety) ─────────────────────────────────
@@ -47,9 +49,15 @@ export const LandingPage = () => {
     // Browsers serialize seeks — spamming currentTime drops frames.
     // Queue only the latest desired time, apply on 'seeked'.
     const video = videoRef.current;
-    const hero  = heroRef.current;
-    const text  = textRef.current;
-    if (!video || !hero || !text) return;
+    const hero = heroRef.current;
+    const text = textRef.current;
+    const scene2 = scene2Ref.current;
+    const scene3 = scene3Ref.current;
+    if (!video || !hero || !text || !scene2 || !scene3) return;
+
+    // Helper: clamp a progress range [a,b] → [0,1]
+    const clamp = (p: number, a: number, b: number) =>
+      Math.min(1, Math.max(0, (p - a) / (b - a)));
 
     video.pause();
     video.currentTime = 0;
@@ -59,9 +67,9 @@ export const LandingPage = () => {
     // Layer 2: scrub:2 smooths the scroll→progress mapping
     // Layer 3: RAF lerp below smooths the progress→currentTime mapping
 
-    let targetTime  = 0;   // driven by ScrollTrigger progress
-    let smoothTime  = 0;   // lerped toward targetTime each frame
-    let rafId       = 0;
+    let targetTime = 0;   // driven by ScrollTrigger progress
+    let smoothTime = 0;   // lerped toward targetTime each frame
+    let rafId = 0;
 
     // Seeking gate — prevents browser seek-spam drops
     let isSeeking = false;
@@ -111,13 +119,29 @@ export const LandingPage = () => {
         invalidateOnRefresh: true,
         scrub: 2,              // 2s lag = slow, cinematic camera feel
         onUpdate: (self) => {
-          // Set target — RAF lerp will ease toward it
-          targetTime = self.progress * dur;
+          const p = self.progress;
 
-          // Fade + lift text in first 15% of scroll
-          const tp = Math.min(self.progress / 0.15, 1);
-          text.style.opacity   = String(1 - tp);
-          text.style.transform = `translate3d(0,${-tp * 60}px,0)`;
+          // Set target — RAF lerp will ease toward it
+          targetTime = p * dur;
+
+          // ── Scene 1: hero text — fade out 0→0.20
+          const s1Out = clamp(p, 0.10, 0.20);
+          text.style.opacity = String(1 - s1Out);
+          text.style.transform = `translate3d(0,${-s1Out * 50}px,0)`;
+
+          // ── Scene 2: Reimagining — fade IN 0.22→0.35, fade OUT 0.58→0.68
+          const s2In = clamp(p, 0.22, 0.35);
+          const s2Out = clamp(p, 0.58, 0.68);
+          const s2Op = s2In * (1 - s2Out);
+          scene2.style.opacity = String(s2Op);
+          scene2.style.transform = `translate3d(0,${(1 - s2In) * 40 - s2Out * 40}px,0)`;
+
+          // ── Scene 3: Control — fade IN 0.70→0.82, fade OUT 0.92→1.00
+          const s3In = clamp(p, 0.70, 0.82);
+          const s3Out = clamp(p, 0.92, 1.00);
+          const s3Op = s3In * (1 - s3Out);
+          scene3.style.opacity = String(s3Op);
+          scene3.style.transform = `translate3d(0,${(1 - s3In) * 40 - s3Out * 40}px,0)`;
         },
       });
 
@@ -188,9 +212,9 @@ export const LandingPage = () => {
           className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse at 60% 50%, transparent 20%, rgba(0,0,0,0.45) 100%)' }}
         />
-        <div className="absolute inset-x-0 bottom-0 h-32 pointer-events-none bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-40 pointer-events-none bg-gradient-to-t from-black/70 to-transparent" />
 
-        {/* Hero copy — GSAP dissolves this via textRef */}
+        {/* ── Scene 1: Hero copy — GSAP dissolves via textRef ── */}
         <div
           ref={textRef}
           className="absolute inset-0 flex items-center justify-center px-4 sm:px-6"
@@ -205,7 +229,6 @@ export const LandingPage = () => {
               <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-white/70 mb-7 sm:mb-11 backdrop-blur-sm">
                 Smart Canteen Experience
               </span>
-
               <h1 className="font-display text-[2.2rem] leading-[1.08] sm:text-5xl sm:leading-[1.05] md:text-7xl lg:text-[5.5rem] font-black tracking-tight text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.6)]">
                 Skip Queues.
                 <br />
@@ -215,28 +238,82 @@ export const LandingPage = () => {
                 <br />
                 Eat Smarter.
               </h1>
-
               <div className="mt-8 sm:mt-11 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
                 <Link to="/menu" className="w-full sm:w-auto">
-                  <Button
-                    size="lg"
-                    className="group w-full sm:w-auto h-12 sm:h-14 px-9 text-sm rounded-full shadow-[0_0_40px_rgba(255,107,0,0.35)] hover:shadow-[0_0_60px_rgba(255,107,0,0.55)] transition-shadow duration-500"
-                  >
+                  <Button size="lg" className="group w-full sm:w-auto h-12 sm:h-14 px-9 text-sm rounded-full shadow-[0_0_40px_rgba(255,107,0,0.35)] hover:shadow-[0_0_60px_rgba(255,107,0,0.55)] transition-shadow duration-500">
                     Order Now
                     <ArrowRight className="ml-2 transition-transform group-hover:translate-x-1 duration-300" size={16} />
                   </Button>
                 </Link>
                 <Link to="/menu" className="w-full sm:w-auto">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full sm:w-auto h-12 sm:h-14 px-9 text-sm rounded-full border-white/20 bg-white/5 backdrop-blur-md hover:bg-white/12 transition-all duration-300"
-                  >
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-9 text-sm rounded-full border-white/20 bg-white/5 backdrop-blur-md hover:bg-white/12 transition-all duration-300">
                     Explore Menu
                   </Button>
                 </Link>
               </div>
             </motion.div>
+          </div>
+        </div>
+
+        {/* ── Scene 2: Reimagining Campus Dining ── */}
+        <div
+          ref={scene2Ref}
+          className="absolute inset-0 flex items-center justify-center px-4 sm:px-6 pointer-events-none"
+          style={{ opacity: 0, willChange: 'opacity, transform' }}
+        >
+          <div className="w-full max-w-5xl text-center">
+            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-white/70 mb-7 sm:mb-11 backdrop-blur-sm">
+              Our Mission
+            </span>
+            <h2 className="font-display text-[2.2rem] leading-[1.08] sm:text-5xl sm:leading-[1.05] md:text-7xl lg:text-[5.5rem] font-black tracking-tight text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.6)]">
+              Reimagining<br />
+              <span className="text-white drop-shadow-[0_4px_32px_rgba(0,0,0,1)] [text-stroke:1px_rgba(0,0,0,0.5)]" style={{ WebkitTextStroke: '1px rgba(0,0,0,0.3)' }}>
+                Campus Dining.
+              </span><br />
+              Elevated.
+            </h2>
+
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
+              {[
+                { label: '95%', sub: 'Queue accuracy' },
+                { label: '< 30s', sub: 'Order time' },
+                { label: '5,000+', sub: 'Daily orders' },
+              ].map(s => (
+                <div key={s.label} className="px-6 py-4 rounded-2xl premium-gradient backdrop-blur-md border border-white/20 shadow-[0_0_40px_rgba(255,107,0,0.35)]">
+                  <p className="text-white font-black text-xl sm:text-2xl">{s.label}</p>
+                  <p className="text-white/90 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{s.sub}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Scene 3: Control at your fingertips ── */}
+        <div
+          ref={scene3Ref}
+          className="absolute inset-0 flex items-center justify-center px-4 sm:px-6 pointer-events-none"
+          style={{ opacity: 0, willChange: 'opacity, transform' }}
+        >
+          <div className="w-full max-w-5xl text-center">
+            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-white/70 mb-7 sm:mb-11 backdrop-blur-sm">
+              Smart Dashboard
+            </span>
+            <h2 className="font-display text-[2.2rem] leading-[1.08] sm:text-5xl sm:leading-[1.05] md:text-7xl lg:text-[5.5rem] font-black tracking-tight text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.6)]">
+              Control at<br />
+              <span className="text-white drop-shadow-[0_4px_32px_rgba(0,0,0,1)]" style={{ WebkitTextStroke: '1px rgba(0,0,0,0.3)' }}>
+                Your Fingertips.
+              </span><br />
+              Effortlessly.
+            </h2>
+
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
+              {['Live order tracking', 'Smart wallet', 'AI recommendations'].map(f => (
+                <div key={f} className="flex items-center gap-3 px-6 py-3 rounded-full premium-gradient backdrop-blur-md border border-white/20 shadow-[0_0_40px_rgba(255,107,0,0.35)]">
+                  <ArrowRight className="text-white shrink-0" size={16} />
+                  <span className="text-white text-sm font-bold tracking-wide">{f}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -245,16 +322,7 @@ export const LandingPage = () => {
       <div className="relative bg-black">
 
         {/* Features Bento */}
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20 sm:py-28 lg:py-36">
-          <div className="text-center mb-14 sm:mb-20 reveal-up">
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
-              Reimagining Campus Dining
-            </h2>
-            <p className="text-base sm:text-lg text-neutral-400 max-w-xl mx-auto leading-relaxed">
-              A unified ecosystem designed to eliminate wait times and elevate your daily meals.
-            </p>
-          </div>
-
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 pt-10 pb-10 sm:pt-16 sm:pb-16 lg:pt-20 lg:pb-20">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
             <div className="glass-card p-7 sm:p-9 rounded-3xl group reveal-up relative overflow-hidden cursor-default">
               <div className="absolute inset-0 bg-gradient-to-br from-orange-500/8 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
@@ -284,32 +352,8 @@ export const LandingPage = () => {
           </div>
         </section>
 
-        {/* Dashboard Preview */}
-        <section className="py-20 sm:py-28 lg:py-36 border-y border-white/5 bg-neutral-950/60">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 text-center mb-12 sm:mb-16 reveal-up">
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
-              Control at your fingertips
-            </h2>
-            <p className="text-base sm:text-lg text-neutral-400">
-              Manage orders, track spending, and discover new favorites.
-            </p>
-          </div>
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 reveal-up">
-            <div className="glass-card rounded-t-3xl border-b-0 overflow-hidden pt-6 sm:pt-8 px-6 sm:px-8 relative">
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-1 bg-white/10 rounded-full" />
-              <img
-                src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1600&auto=format&fit=crop"
-                alt="Dashboard Interface"
-                loading="lazy"
-                className="w-full rounded-t-2xl border border-white/10 border-b-0 opacity-70"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/30 to-transparent" />
-            </div>
-          </div>
-        </section>
-
         {/* Live Queue */}
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20 sm:py-28 lg:py-36">
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 pt-4 pb-10 sm:pt-6 sm:pb-16 lg:pt-8 lg:pb-20">
           <div className="grid md:grid-cols-2 gap-12 sm:gap-20 items-center">
             <div className="reveal-up order-2 md:order-1">
               <div className="glass-card p-6 rounded-3xl border border-white/10 hover:-translate-y-1 transition-transform duration-500 cursor-default">
@@ -337,9 +381,7 @@ export const LandingPage = () => {
             </div>
 
             <div className="reveal-up order-1 md:order-2">
-              <div className="h-12 w-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
-                <Clock className="text-orange-400" size={22} />
-              </div>
+
               <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-5">
                 Never wait blindly again.
               </h2>
@@ -359,7 +401,7 @@ export const LandingPage = () => {
         </section>
 
         {/* QR + AI Cards */}
-        <section className="py-20 sm:py-28 lg:py-36 bg-neutral-900/30 border-t border-white/5">
+        <section className="pt-10 pb-20 sm:pt-16 sm:pb-28 lg:pt-20 lg:pb-36 bg-neutral-900/30 border-t border-white/5">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="glass-card p-8 sm:p-10 rounded-3xl reveal-up relative overflow-hidden group cursor-default">
