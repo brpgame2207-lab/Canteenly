@@ -26,25 +26,6 @@ import {
 } from 'recharts';
 import { cn } from '../../../lib/utils';
 
-const salesData = [
-  { name: '08 AM', sales: 400 },
-  { name: '10 AM', sales: 1200 },
-  { name: '12 PM', sales: 3000 },
-  { name: '02 PM', sales: 2500 },
-  { name: '04 PM', sales: 1800 },
-  { name: '06 PM', sales: 2200 },
-  { name: '08 PM', sales: 1000 },
-];
-
-const revenueData = [
-  { day: 'Mon', amount: 45000 },
-  { day: 'Tue', amount: 52000 },
-  { day: 'Wed', amount: 48000 },
-  { day: 'Thu', amount: 61000 },
-  { day: 'Fri', amount: 55000 },
-  { day: 'Sat', amount: 42000 },
-  { day: 'Sun', amount: 38000 },
-];
 
 export const OverviewSection = () => {
   const stats = [
@@ -64,17 +45,6 @@ export const OverviewSection = () => {
         <div>
           <h1 className="font-display text-3xl font-bold text-white tracking-tight">Dashboard Overview</h1>
           <p className="text-neutral-400 mt-1">Welcome back. Here's what's happening today.</p>
-        </div>
-        <div className="flex gap-3">
-          <select className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand/50">
-            <option value="today">Today</option>
-            <option value="yesterday">Yesterday</option>
-            <option value="7days">Last 7 Days</option>
-            <option value="30days">Last 30 Days</option>
-          </select>
-          <button className="bg-brand hover:bg-brand-light text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(255,107,0,0.3)]">
-            Export Report
-          </button>
         </div>
       </div>
 
@@ -126,62 +96,6 @@ export const OverviewSection = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Chart */}
-        <div className="lg:col-span-2 glass-card p-8 rounded-3xl">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h3 className="text-xl font-bold text-white">Sales Activity</h3>
-              <p className="text-sm text-neutral-400 mt-1">Real-time hourly sales tracking</p>
-            </div>
-          </div>
-          <div className="h-[350px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ff6b00" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#ff6b00" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#888', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#888', fontSize: 12}} />
-                <Tooltip 
-                   contentStyle={{ backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: '#fff', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
-                   itemStyle={{ color: '#ff6b00', fontWeight: 'bold' }}
-                />
-                <Area type="monotone" dataKey="sales" stroke="#ff6b00" strokeWidth={4} fillOpacity={1} fill="url(#colorSales)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Secondary Chart / Weekly Revenue */}
-        <div className="glass-card p-8 rounded-3xl">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h3 className="text-xl font-bold text-white">Weekly Revenue</h3>
-              <p className="text-sm text-neutral-400 mt-1">Last 7 days performance</p>
-            </div>
-          </div>
-          <div className="h-[350px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fill: '#888', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#888', fontSize: 12}} />
-                <Tooltip 
-                   cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                   contentStyle={{ backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: '#fff' }}
-                   itemStyle={{ color: '#ff9e5e', fontWeight: 'bold' }}
-                />
-                <Bar dataKey="amount" fill="#ff6b00" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

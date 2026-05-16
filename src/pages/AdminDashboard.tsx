@@ -5,6 +5,9 @@ import { AdminTopNav } from './admin/AdminTopNav';
 import { OverviewSection } from './admin/sections/OverviewSection';
 import { LiveOrdersSection } from './admin/sections/LiveOrdersSection';
 import { PlaceholderSection } from './admin/sections/PlaceholderSection';
+import { FoodMenuSection } from './admin/sections/FoodMenuSection';
+import { UserDirectorySection } from './admin/sections/UserDirectorySection';
+import { StaffManagementSection } from './admin/sections/StaffManagementSection';
 
 export const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
@@ -16,17 +19,13 @@ export const AdminDashboard = () => {
       case 'orders':
         return <LiveOrdersSection />;
       case 'food':
-        return <PlaceholderSection title="Food Menu Management" description="Manage all food items, variants, availability, and categories." />;
-      case 'categories':
-        return <PlaceholderSection title="Categories Management" description="Organize food items into functional and seasonal categories." />;
+        return <FoodMenuSection />;
       case 'inventory':
         return <PlaceholderSection title="Inventory Control" description="Track stock levels, raw materials, and get low-stock alerts." />;
       case 'users':
-        return <PlaceholderSection title="User Directory" description="Manage registered students, staff, and wallet balances." />;
+        return <UserDirectorySection />;
       case 'staff':
-        return <PlaceholderSection title="Staff Management" description="Manage canteen staff, roles, shifts, and permissions." />;
-      case 'analytics':
-        return <PlaceholderSection title="Deep Analytics" description="Advanced reporting on sales trends, item popularity, and peak hours." />;
+        return <StaffManagementSection />;
       case 'feedback':
         return <PlaceholderSection title="Feedback & Ratings" description="Review student feedback, handle complaints, and manage ratings." />;
       case 'notifications':

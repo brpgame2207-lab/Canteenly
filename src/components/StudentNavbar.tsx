@@ -13,11 +13,6 @@ export const StudentNavbar = () => {
   const { logout, user } = useAuth();
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
-  const navItems = [
-    { name: 'Home', path: '/', icon: LayoutDashboard },
-    { name: 'Menu', path: '/menu', icon: UtensilsCrossed },
-  ];
-
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
@@ -27,29 +22,6 @@ export const StudentNavbar = () => {
           </div>
           <span className="font-display text-xl font-bold tracking-tight text-white">Canteenly</span>
         </Link>
-
-        {/* Desktop Nav */}
-        <div className="hidden items-center gap-8 md:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "group relative flex items-center gap-2 text-sm font-medium transition-colors hover:text-brand",
-                location.pathname === item.path ? "text-brand" : "text-neutral-400"
-              )}
-            >
-              <item.icon size={16} />
-              {item.name}
-              {location.pathname === item.path && (
-                <motion.div
-                  layoutId="nav-pill"
-                  className="absolute -bottom-[21px] left-0 right-0 h-0.5 bg-brand"
-                />
-              )}
-            </Link>
-          ))}
-        </div>
 
         <div className="flex items-center gap-4">
           <Link to="/cart" className="relative">
