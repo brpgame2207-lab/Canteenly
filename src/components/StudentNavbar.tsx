@@ -3,12 +3,14 @@ import { motion } from 'motion/react';
 import { ShoppingCart, User, LayoutDashboard, UtensilsCrossed, History, CreditCard, Settings, Search, Bell, Menu, X, ChevronRight, TrendingUp, Star, Clock } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 
 export const StudentNavbar = () => {
   const location = useLocation();
   const { items } = useCart();
+  const { logout, user } = useAuth();
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   const navItems = [
@@ -64,10 +66,19 @@ export const StudentNavbar = () => {
               )}
             </Button>
           </Link>
-          <Button variant="outline" size="sm" className="hidden md:inline-flex">
-            <User size={16} className="mr-2" />
-            Profile
-          </Button>
+          {user ? (
+            <Button variant="outline" size="sm" className="hidden md:inline-flex" onClick={logout}>
+              <User size={16} className="mr-2" />
+              Logout
+            </Button>
+          ) : (
+            <Link to="/login">
+              <Button variant="outline" size="sm" className="hidden md:inline-flex">
+                <User size={16} className="mr-2" />
+                Login
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </nav>
