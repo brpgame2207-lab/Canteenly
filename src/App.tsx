@@ -73,23 +73,21 @@ const AppContent = () => {
     <div className="min-h-screen text-white bg-black">
       {!hideNavAndFooter && <StudentNavbar />}
       <main className={isAdmin || isLanding || isMenu ? "" : "container mx-auto"}>
-        <PageWrapper>
-          <Routes>
-            {/* Guest Route: If logged in, redirects to respective dashboard */}
-            <Route path="/" element={<AuthGuard requireGuest><LandingPage /></AuthGuard>} />
-            <Route path="/login" element={<AuthGuard requireGuest><LoginPage /></AuthGuard>} />
-            
-            {/* Protected Routes */}
-            <Route path="/menu" element={<AuthGuard><MenuPage /></AuthGuard>} />
-            <Route path="/cart" element={<AuthGuard><CartPage /></AuthGuard>} />
-            <Route path="/tracking" element={<AuthGuard><TrackingPage /></AuthGuard>} />
-            
-            {/* Admin Route */}
-            <Route path="/admin" element={<AuthGuard requireAdmin><AdminDashboard /></AuthGuard>} />
-            
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </PageWrapper>
+        <Routes>
+          {/* Guest Route: If logged in, redirects to respective dashboard */}
+          <Route path="/" element={<AuthGuard requireGuest><LandingPage /></AuthGuard>} />
+          <Route path="/login" element={<AuthGuard requireGuest><LoginPage /></AuthGuard>} />
+          
+          {/* Protected Routes */}
+          <Route path="/menu" element={<AuthGuard><MenuPage /></AuthGuard>} />
+          <Route path="/cart" element={<AuthGuard><CartPage /></AuthGuard>} />
+          <Route path="/tracking" element={<AuthGuard><TrackingPage /></AuthGuard>} />
+          
+          {/* Admin Route */}
+          <Route path="/admin" element={<AuthGuard requireAdmin><AdminDashboard /></AuthGuard>} />
+          
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
 
       {!hideNavAndFooter && (

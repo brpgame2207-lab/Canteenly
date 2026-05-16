@@ -30,10 +30,8 @@ export const LoginPage = () => {
       
       if (email.toLowerCase() === 'admin@canteenly.com' && password === 'admin123') {
         login(email, 'admin');
-        navigate('/admin');
       } else if (email.includes('@')) {
         login(email, 'user');
-        navigate('/menu');
       } else {
         setError('Invalid credentials. Try admin@canteenly.com / admin123');
       }
@@ -142,19 +140,13 @@ export const LoginPage = () => {
 
           <div className="mt-8 pt-8 border-t border-white/5 flex gap-4">
             <button 
-              onClick={() => {
-                login('admin@canteenly.com', 'admin');
-                navigate('/admin');
-              }}
+              onClick={() => login('admin@canteenly.com', 'admin')}
               className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
             >
               Admin
             </button>
             <button 
-              onClick={() => {
-                login('user@canteenly.com', 'user');
-                navigate('/menu');
-              }}
+              onClick={() => login('user@canteenly.com', 'user')}
               className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
             >
               User
