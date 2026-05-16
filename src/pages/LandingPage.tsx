@@ -105,7 +105,7 @@ export const LandingPage = () => {
       heroST = ScrollTrigger.create({
         trigger: hero,
         start: 'top top',
-        end: '+=500%',
+        end: '+=250%', // Halved the scroll distance required to complete the video
         pin: true,
         pinSpacing: true,
         invalidateOnRefresh: true,
