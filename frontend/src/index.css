@@ -34,11 +34,25 @@
 
 /* Custom scrollbar for premium feel */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
   @apply bg-transparent;
 }
 ::-webkit-scrollbar-thumb {
   @apply bg-neutral-800 rounded-full hover:bg-neutral-700 transition-colors;
+}
+
+/* ── Performance globals ────────────────────────────────────────────────────── */
+
+/* Prevent subpixel bleed on GPU-animated elements */
+.will-animate {
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+/* Smooth interactive transitions */
+a, button {
+  -webkit-tap-highlight-color: transparent;
 }
