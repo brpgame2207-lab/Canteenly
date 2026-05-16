@@ -36,11 +36,12 @@ const AppContent = () => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
   const isLanding = location.pathname === '/';
+  const isMenu = location.pathname === '/menu';
 
   return (
     <div className="min-h-screen text-white bg-black">
       {!isAdmin && <StudentNavbar />}
-      <main className={isAdmin || isLanding ? "" : "container mx-auto"}>
+      <main className={isAdmin || isLanding || isMenu ? "" : "container mx-auto"}>
         <PageWrapper>
           <Routes>
             <Route path="/" element={<LandingPage />} />

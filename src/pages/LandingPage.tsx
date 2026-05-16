@@ -136,9 +136,9 @@ export const LandingPage = () => {
           scene2.style.opacity = String(s2Op);
           scene2.style.transform = `translate3d(0,${(1 - s2In) * 40 - s2Out * 40}px,0)`;
 
-          // ── Scene 3: Control — fade IN 0.70→0.82, fade OUT 0.92→1.00
-          const s3In = clamp(p, 0.70, 0.82);
-          const s3Out = clamp(p, 0.92, 1.00);
+          // ── Scene 3: Control — fade IN 0.68→0.78, fade OUT 0.95→1.00
+          const s3In = clamp(p, 0.68, 0.78);
+          const s3Out = clamp(p, 0.95, 1.00);
           const s3Op = s3In * (1 - s3Out);
           scene3.style.opacity = String(s3Op);
           scene3.style.transform = `translate3d(0,${(1 - s3In) * 40 - s3Out * 40}px,0)`;

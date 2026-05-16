@@ -14,8 +14,6 @@ export const StudentNavbar = () => {
   const navItems = [
     { name: 'Home', path: '/', icon: LayoutDashboard },
     { name: 'Menu', path: '/menu', icon: UtensilsCrossed },
-    { name: 'History', path: '/history', icon: History },
-    { name: 'Wallet', path: '/wallet', icon: CreditCard },
   ];
 
   return (

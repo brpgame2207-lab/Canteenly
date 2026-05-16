@@ -1,172 +1,262 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Filter, ShoppingPlus, Star, Info, ChevronRight, Zap } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { Search, ShoppingBag, Bell } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { cn } from '../lib/utils';
 
+// Import new premium components
+import { HeroBanner } from '../components/menu/HeroBanner';
+import { FilterBar } from '../components/menu/FilterBar';
+import { PremiumFoodCard, FoodItem } from '../components/menu/PremiumFoodCard';
+import { CartSidebar } from '../components/menu/CartSidebar';
+
 export const MenuPage = () => {
-  const [menu, setMenu] = useState<any[]>([]);
+  const [rawMenu, setRawMenu] = useState<any[]>([]);
+  const [enrichedMenu, setEnrichedMenu] = useState<FoodItem[]>([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const { addToCart } = useCart();
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  
+  const [filters, setFilters] = useState({
+    diet: null as 'veg' | 'non-veg' | null,
+    bestseller: false,
+    fastPrep: false,
+    spicy: false,
+    healthy: false,
+  });
 
-  const categories = ['All', 'Fast Food', 'Healthy', 'Drinks', 'Desserts', 'Indian'];
+  const { items: cart, total } = useCart();
+  const cartItemCount = cart.length; // Or aggregate quantity if items repeat
+
+  const categories = [
+    'All', 'Breakfast', 'Lunch', 'Dinner', 'Snacks', 
+    'Beverages', 'Desserts', 'South Indian', 'North Indian', 
+    'Chinese', 'Fast Food', 'Healthy Meals'
+  ];
 
   useEffect(() => {
     fetch('/api/menu')
       .then(res => res.json())
-      .then(data => {
-        setMenu(data);
+      .then(resData => {
+        // Handle both { success: true, data: [] } and raw [] array responses
+        const data = resData.data || resData; 
+        if (Array.isArray(data)) {
+          setRawMenu(data);
+          
+          // Enrich data with premium UI fields since the backend might not have them yet
+          const enriched = data.map((item, index) => {
+            // Deterministic mock generation based on index/id for consistency
+            const idHash = String(item._id || item.id || index).charCodeAt(0);
+            
+            return {
+              id: item._id || item.id,
+              name: item.name,
+              description: item.description || "A delicious premium meal crafted with fresh ingredients.",
+              price: item.price,
+              originalPrice: idHash % 3 === 0 ? item.price + 50 : undefined, // Random discount for some
+              image: item.image || item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
+              category: item.category,
+              isVeg: item.category?.toLowerCase() === 'non-veg' ? false : (idHash % 5 !== 0), // Mostly veg mock
+              rating: Number((4.0 + (idHash % 10) * 0.1).toFixed(1)),
+              reviewsCount: 20 + (idHash % 200),
+              prepTime: 10 + (idHash % 25), // 10 to 35 mins
+              spiceLevel: (idHash % 4) as 0|1|2|3,
+              isAvailable: item.available !== false, // Default true
+              isBestseller: idHash % 7 === 0,
+              isTrending: idHash % 6 === 0,
+              tags: item.tags || [],
+            } as FoodItem;
+          });
+          
+          setEnrichedMenu(enriched);
+        }
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch menu", err);
         setIsLoading(false);
       });
   }, []);
 
-  const filteredMenu = menu.filter(item => {
-    const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+  const filteredMenu = enrichedMenu.filter(item => {
+    // Category Filter
+    if (activeCategory !== 'All') {
+      // Basic matching logic — can be enhanced
+      const catLower = item.category?.toLowerCase() || '';
+      const activeLower = activeCategory.toLowerCase();
+      if (!catLower.includes(activeLower)) return false;
+    }
+
+    // Search Filter
+    if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+
+    // Advanced Filters
+    if (filters.diet === 'veg' && !item.isVeg) return false;
+    if (filters.diet === 'non-veg' && item.isVeg) return false;
+    if (filters.bestseller && !item.isBestseller) return false;
+    if (filters.fastPrep && item.prepTime > 15) return false;
+    if (filters.spicy && item.spiceLevel === 0) return false;
+    if (filters.healthy && !item.category?.toLowerCase().includes('health')) return false; // Mock logic
+
+    return true;
   });
 
   return (
-    <div className="pt-24 pb-12 px-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-        <div>
-          <h1 className="font-display text-4xl font-bold text-white mb-2">Campus Canteen Menu</h1>
-          <p className="text-neutral-400">Discover delicious meals prepared fresh just for you.</p>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-brand transition-colors" size={18} />
+    <div className="bg-[#0c0c0c] min-h-screen text-white font-sans selection:bg-brand/30 selection:text-brand pb-24 pt-16">
+      
+      {/* ── Sticky Top Header ── */}
+      <div className="sticky top-16 z-40 bg-black/80 backdrop-blur-xl border-b border-white/10 pt-4 pb-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4">
+          
+          {/* Logo / Title (Mobile hidden, shown on large) */}
+          <div className="hidden md:block">
+            <h1 className="font-display text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-brand to-brand-light">
+              Menu
+            </h1>
+          </div>
+
+          {/* Smart Search Bar */}
+          <div className="relative flex-1 max-w-xl group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-brand transition-colors" size={18} />
             <input 
               type="text"
-              placeholder="Search dishes..."
+              placeholder="Search for your favorite meals..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-neutral-900 border border-white/10 rounded-full pl-10 pr-6 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand/40 transition-all w-full md:w-64"
+              className="w-full bg-white/5 border border-white/10 rounded-full pl-12 pr-24 py-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:bg-white/10 transition-all shadow-inner"
             />
+            <button className={cn(
+              "absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-full premium-gradient text-white text-[10px] font-bold uppercase tracking-wider shadow-lg transition-all duration-300",
+              searchQuery ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 pointer-events-none group-focus-within:opacity-100 group-focus-within:translate-x-0 group-focus-within:pointer-events-auto"
+            )}>
+              Search
+            </button>
           </div>
-          <Button variant="secondary" className="rounded-full">
-            <Filter size={18} className="mr-2" />
-            Filters
-          </Button>
-        </div>
-      </div>
 
-      {/* Categories */}
-      <div className="flex gap-2 mb-10 overflow-x-auto pb-2 scrollbar-hide">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className={cn(
-              "whitespace-nowrap px-6 py-2 rounded-full text-sm font-medium transition-all",
-              activeCategory === cat 
-                ? "premium-gradient text-white shadow-lg" 
-                : "bg-neutral-900 text-neutral-400 hover:text-white hover:bg-neutral-800"
-            )}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Recommended Section (AI Feature Placeholder) */}
-      <section className="mb-12">
-        <div className="flex items-center gap-2 mb-6">
-          <Zap className="text-brand" size={20} />
-          <h2 className="text-xl font-bold text-white">AI Recommendations</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {menu.slice(0, 4).map((item) => (
-            <motion.div
-              layout
-              key={`rec-${item.id}`}
-              className="glass-card rounded-2xl overflow-hidden group border-brand/20 bg-brand/5"
+          {/* Veg/Non-Veg Toggle in Header */}
+          <div className="flex items-center bg-white/5 border border-white/10 rounded-full p-1 gap-0.5 sm:gap-1 scale-90 sm:scale-100">
+            <button 
+              onClick={() => setFilters({ ...filters, diet: null })}
+              className={cn(
+                "px-2.5 sm:px-4 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all",
+                filters.diet === null ? "bg-white/10 text-white" : "text-neutral-500 hover:text-neutral-300"
+              )}
             >
-              <div className="aspect-video relative overflow-hidden">
-                <img src={item.image} alt={item.name} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
-                <div className="absolute top-2 right-2 px-2 py-1 bg-brand text-[10px] font-bold text-white rounded uppercase tracking-tighter">85% Match</div>
-              </div>
-              <div className="p-4">
-                <h3 className="text-white font-bold mb-1">{item.name}</h3>
-                <div className="flex items-center justify-between">
-                    <span className="text-brand font-medium">₹{item.price}</span>
-                    <Button size="sm" variant="ghost" onClick={() => addToCart(item)}>Add</Button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+              All
+            </button>
+            <button 
+              onClick={() => setFilters({ ...filters, diet: 'veg' })}
+              className={cn(
+                "px-2.5 sm:px-4 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5",
+                filters.diet === 'veg' ? "bg-green-500/20 text-green-400" : "text-neutral-500 hover:text-neutral-300"
+              )}
+            >
+              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500" />
+              <span className="hidden xs:inline">Veg</span>
+            </button>
+            <button 
+              onClick={() => setFilters({ ...filters, diet: 'non-veg' })}
+              className={cn(
+                "px-2.5 sm:px-4 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5",
+                filters.diet === 'non-veg' ? "bg-red-500/20 text-red-400" : "text-neutral-500 hover:text-neutral-300"
+              )}
+            >
+              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-red-500" />
+              <span className="hidden xs:inline">Non-Veg</span>
+            </button>
+          </div>
 
-      {/* Main Menu Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        <AnimatePresence mode="popLayout">
-          {isLoading ? (
-            Array(8).fill(0).map((_, i) => (
-              <div key={i} className="glass-card h-80 rounded-3xl animate-pulse bg-white/5" />
-            ))
-          ) : filteredMenu.length > 0 ? (
-            filteredMenu.map((item) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.2 }}
-                key={item.id}
-                className="glass-card rounded-3xl overflow-hidden group hover:bg-white/10 transition-colors"
-              >
-                <div className="aspect-square relative overflow-hidden">
-                  <img 
-                    src={item.image} 
-                    alt={item.name} 
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  
-                  <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end translate-y-8 group-hover:translate-y-0 transition-transform">
-                     <span className="bg-brand text-white px-3 py-1 rounded-full text-xs font-bold leading-none">
-                        ₹{item.price}
-                     </span>
-                     <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-1 rounded-full text-xs text-yellow-500">
-                        <Star size={10} fill="currentColor" />
-                        <span>{item.rating}</span>
-                     </div>
-                  </div>
-                </div>
-                
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-white text-lg">{item.name}</h3>
-                    <span className="text-[10px] uppercase tracking-wider text-neutral-500 border border-neutral-800 px-2 py-0.5 rounded-full">{item.category}</span>
-                  </div>
-                  <p className="text-neutral-500 text-sm mb-6 line-clamp-2">{item.description}</p>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      className="flex-1" 
-                      onClick={() => addToCart(item)}
-                    >
-                      Add to Cart
-                    </Button>
-                    <Button variant="secondary" size="icon" className="rounded-2xl">
-                      <Info size={18} />
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            ))
-          ) : (
-             <div className="col-span-full py-20 text-center">
-                <p className="text-neutral-500">No dishes found matching your search.</p>
-             </div>
-          )}
-        </AnimatePresence>
+          {/* Icons: Notifications & Cart */}
+          <div className="flex items-center gap-3 shrink-0">
+            <button className="relative p-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors hidden sm:block">
+              <Bell size={20} className="text-neutral-300" />
+              <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-brand rounded-full border-2 border-[#0c0c0c]"></span>
+            </button>
+            
+            <button 
+              onClick={() => setIsCartOpen(true)}
+              className="relative flex items-center gap-2 p-2.5 sm:px-5 sm:py-2.5 rounded-full premium-gradient shadow-[0_0_20px_rgba(255,107,0,0.2)] hover:shadow-[0_0_30px_rgba(255,107,0,0.4)] transition-all duration-300"
+            >
+              <ShoppingBag size={20} className="text-white" />
+              <span className="hidden sm:block font-bold text-white text-sm">₹{total}</span>
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 sm:static sm:top-auto sm:right-auto bg-white text-brand text-[10px] sm:text-xs font-black w-5 h-5 flex items-center justify-center rounded-full shadow-lg">
+                  {cartItemCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12">
+        {/* ── Hero Banner ── */}
+        <HeroBanner />
+
+        {/* ── Filter Bar & Categories ── */}
+        <FilterBar 
+          categories={categories}
+          activeCategory={activeCategory}
+          setActiveCategory={setActiveCategory}
+          filters={filters}
+          setFilters={setFilters}
+        />
+
+        {/* ── Main Menu Grid ── */}
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold">
+            {activeCategory === 'All' ? 'Explore All' : activeCategory}
+          </h2>
+          <span className="text-neutral-500 font-medium text-sm">
+            {filteredMenu.length} items
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
+          <AnimatePresence mode="popLayout">
+            {isLoading ? (
+              Array(8).fill(0).map((_, i) => (
+                <div key={`skel-${i}`} className="glass-card h-[400px] rounded-[2rem] animate-pulse bg-white/5 border border-white/5" />
+              ))
+            ) : filteredMenu.length > 0 ? (
+              filteredMenu.map((item) => (
+                <PremiumFoodCard key={item.id} item={item} />
+              ))
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="col-span-full py-20 flex flex-col items-center justify-center text-center"
+              >
+                <div className="w-24 h-24 mb-6 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                  <Search size={40} className="text-neutral-500" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">No meals found</h3>
+                <p className="text-neutral-400 max-w-sm">
+                  We couldn't find any dishes matching your current filters. Try tweaking your search or clearing filters.
+                </p>
+                <button 
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilters({ diet: null, bestseller: false, fastPrep: false, spicy: false, healthy: false });
+                    setActiveCategory('All');
+                  }}
+                  className="mt-6 px-6 py-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors font-medium text-sm"
+                >
+                  Clear all filters
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* ── Floating Cart Sidebar ── */}
+      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      
     </div>
   );
 };
