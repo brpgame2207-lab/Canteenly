@@ -5,11 +5,12 @@ type Role = 'admin' | 'user';
 interface User {
   email: string;
   role: Role;
+  token?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, role: Role) => void;
+  login: (email: string, role: Role, token?: string) => void;
   logout: () => void;
   isLoading: boolean;
 }
@@ -33,15 +34,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const login = (email: string, role: Role) => {
-    const newUser = { email, role };
+  const login = (email: string, role: Role, token?: string) => {
+    const newUser = { email, role, token };
     setUser(newUser);
     localStorage.setItem('canteenly_user', JSON.stringify(newUser));
+    if (token) {
+      localStorage.setItem('canteenly_token', token);
+    }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('canteenly_user');
+    localStorage.removeItem('canteenly_token');
   };
 
   return (

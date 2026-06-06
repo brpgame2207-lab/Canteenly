@@ -13,29 +13,53 @@ export const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const performApiLogin = async (loginEmail: string, loginPassword: string) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      });
+      const data = await response.json();
+      if (data.success) {
+        login(data.user.email, data.user.role, data.token);
+        setIsLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.error("Backend login failed, trying register fallback", err);
+    }
+
+    // Fallback: register the user in clean MongoDB database
+    try {
+      const role = loginEmail.toLowerCase() === 'admin@canteenly.com' ? 'admin' : 'student';
+      const name = role === 'admin' ? 'Admin User' : 'Student User';
+      const regResponse = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email: loginEmail, password: loginPassword, phone: '1234567890', role })
+      });
+      const regData = await regResponse.json();
+      if (regData.success) {
+        login(regData.user.email, regData.user.role, regData.token);
+      } else {
+        setError(regData.message || 'Authentication failed.');
+      }
+    } catch (err) {
+      setError('Authentication failed. Server connection error.');
+    }
+    setIsLoading(false);
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    
     if (!email || !password) {
       setError('Please fill in all fields.');
       return;
     }
-
-    setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      if (email.toLowerCase() === 'admin@canteenly.com' && password === 'admin123') {
-        login(email, 'admin');
-      } else if (email.includes('@')) {
-        login(email, 'user');
-      } else {
-        setError('Invalid credentials. Try admin@canteenly.com / admin123');
-      }
-    }, 1500);
+    performApiLogin(email, password);
   };
 
   return (
@@ -140,13 +164,13 @@ export const LoginPage = () => {
 
           <div className="mt-8 pt-8 border-t border-white/5 flex gap-4">
             <button 
-              onClick={() => login('admin@canteenly.com', 'admin')}
+              onClick={() => performApiLogin('admin@canteenly.com', 'admin123')}
               className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
             >
               Admin
             </button>
             <button 
-              onClick={() => login('user@canteenly.com', 'user')}
+              onClick={() => performApiLogin('user@canteenly.com', 'user123')}
               className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
             >
               User

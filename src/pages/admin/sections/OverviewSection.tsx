@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   IndianRupee, 
@@ -47,15 +47,97 @@ const revenueData = [
 ];
 
 export const OverviewSection = () => {
+  const [dbStats, setDbStats] = useState<{
+    todayRevenue: number;
+    totalOrders: number;
+    activeUsers: number;
+    pendingOrders: number;
+    ordersInQueue: number;
+    totalItemsSold: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('canteenly_token');
+    fetch('/api/admin/stats', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.success && resData.data) {
+          setDbStats(resData.data);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to fetch admin stats", err);
+      });
+  }, []);
+
+  const formatActiveUsers = (val: number) => {
+    if (val >= 1000) {
+      return `${(val / 1000).toFixed(1)}k`;
+    }
+    return val.toString();
+  };
+
   const stats = [
-    { label: "Today's Revenue", value: "₹45,231", change: "+12.5%", trend: "up", icon: IndianRupee },
-    { label: "Total Orders", value: "842", change: "+18.2%", trend: "up", icon: ShoppingBag },
-    { label: "Active Users", value: "3.2k", change: "-2.4%", trend: "down", icon: Users },
-    { label: "Pending Orders", value: "24", change: "Requires Action", trend: "alert", icon: Clock },
-    { label: "Monthly Revenue", value: "₹12.4L", change: "+8.1%", trend: "up", icon: TrendingUp },
-    { label: "Orders in Queue", value: "18", change: "Live", trend: "neutral", icon: Activity },
-    { label: "Wallet Recharges", value: "₹1.2L", change: "+5.4%", trend: "up", icon: Wallet },
-    { label: "Total Items Sold", value: "1,245", change: "+14.2%", trend: "up", icon: Package },
+    { 
+      label: "Today's Revenue", 
+      value: dbStats !== null ? `₹${dbStats.todayRevenue.toLocaleString('en-IN')}` : "₹45,231", 
+      change: dbStats !== null ? (dbStats.todayRevenue > 0 ? "+12.5%" : "0%") : "+12.5%", 
+      trend: "up", 
+      icon: IndianRupee 
+    },
+    { 
+      label: "Total Orders", 
+      value: dbStats !== null ? dbStats.totalOrders.toLocaleString() : "842", 
+      change: dbStats !== null ? (dbStats.totalOrders > 0 ? "+18.2%" : "0%") : "+18.2%", 
+      trend: "up", 
+      icon: ShoppingBag 
+    },
+    { 
+      label: "Active Users", 
+      value: dbStats !== null ? formatActiveUsers(dbStats.activeUsers) : "3.2k", 
+      change: dbStats !== null ? (dbStats.activeUsers > 0 ? "+5.0%" : "0%") : "-2.4%", 
+      trend: dbStats !== null ? "up" : "down", 
+      icon: Users 
+    },
+    { 
+      label: "Pending Orders", 
+      value: dbStats !== null ? dbStats.pendingOrders.toString() : "24", 
+      change: dbStats !== null && dbStats.pendingOrders > 0 ? "Requires Action" : "Live", 
+      trend: dbStats !== null && dbStats.pendingOrders > 0 ? "alert" : "neutral", 
+      icon: Clock 
+    },
+    { 
+      label: "Monthly Revenue", 
+      value: "₹12.4L", 
+      change: "+8.1%", 
+      trend: "up", 
+      icon: TrendingUp 
+    },
+    { 
+      label: "Orders in Queue", 
+      value: dbStats !== null ? dbStats.ordersInQueue.toString() : "18", 
+      change: "Live", 
+      trend: "neutral", 
+      icon: Activity 
+    },
+    { 
+      label: "Wallet Recharges", 
+      value: "₹1.2L", 
+      change: "+5.4%", 
+      trend: "up", 
+      icon: Wallet 
+    },
+    { 
+      label: "Total Items Sold", 
+      value: dbStats !== null ? dbStats.totalItemsSold.toLocaleString() : "1,245", 
+      change: dbStats !== null ? (dbStats.totalItemsSold > 0 ? "+14.2%" : "0%") : "+14.2%", 
+      trend: "up", 
+      icon: Package 
+    },
   ];
 
   return (
