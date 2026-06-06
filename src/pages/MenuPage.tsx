@@ -88,8 +88,14 @@ export const MenuPage = () => {
     }
 
     // Search Filter
-    if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
+    if (searchInputValue) {
+      const query = searchInputValue.toLowerCase();
+      const name = item.name?.toLowerCase() || '';
+      const desc = item.description?.toLowerCase() || '';
+      const cat = item.category?.toLowerCase() || '';
+      if (!name.includes(query) && !desc.includes(query) && !cat.includes(query)) {
+        return false;
+      }
     }
 
     // Advanced Filters
