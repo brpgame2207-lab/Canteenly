@@ -56,3 +56,15 @@ exports.updateOrderStatus = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.getAllOrders = async (req, res, next) => {
+  try {
+    const orders = await Order.find({})
+      .populate('userId', 'name')
+      .populate('items.menuItemId', 'name')
+      .sort('-createdAt');
+    res.status(200).json({ success: true, count: orders.length, data: orders });
+  } catch (err) {
+    next(err);
+  }
+};

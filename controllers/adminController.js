@@ -67,3 +67,48 @@ exports.getDashboardStats = async (req, res, next) => {
     next(err);
   }
 };
+
+const Staff = require('../models/Staff');
+
+// Get all staff
+exports.getStaff = async (req, res, next) => {
+  try {
+    const staff = await Staff.find({});
+    res.status(200).json({ success: true, count: staff.length, data: staff });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Add a staff member
+exports.addStaff = async (req, res, next) => {
+  try {
+    const staff = await Staff.create(req.body);
+    res.status(201).json({ success: true, data: staff });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Update a staff member
+exports.updateStaff = async (req, res, next) => {
+  try {
+    const staff = await Staff.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    });
+    res.status(200).json({ success: true, data: staff });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Delete a staff member
+exports.deleteStaff = async (req, res, next) => {
+  try {
+    await Staff.findByIdAndDelete(req.params.id);
+    res.status(200).json({ success: true, data: {} });
+  } catch (err) {
+    next(err);
+  }
+};

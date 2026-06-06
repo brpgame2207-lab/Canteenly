@@ -6,7 +6,6 @@ import { OverviewSection } from './admin/sections/OverviewSection';
 import { LiveOrdersSection } from './admin/sections/LiveOrdersSection';
 import { PlaceholderSection } from './admin/sections/PlaceholderSection';
 import { FoodMenuSection } from './admin/sections/FoodMenuSection';
-import { UserDirectorySection } from './admin/sections/UserDirectorySection';
 import { StaffManagementSection } from './admin/sections/StaffManagementSection';
 
 export const AdminDashboard = () => {
@@ -22,8 +21,6 @@ export const AdminDashboard = () => {
         return <FoodMenuSection />;
       case 'inventory':
         return <PlaceholderSection title="Inventory Control" description="Track stock levels, raw materials, and get low-stock alerts." />;
-      case 'users':
-        return <UserDirectorySection />;
       case 'staff':
         return <StaffManagementSection />;
       case 'feedback':

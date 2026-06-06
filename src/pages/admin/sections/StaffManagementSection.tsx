@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, UserPlus, Search, Filter, Clock, Calendar, 
@@ -52,7 +52,7 @@ const DUMMY_STAFF: StaffMember[] = [
 
 export const StaffManagementSection = () => {
   const [activeSubTab, setActiveSubTab] = useState<'directory' | 'shifts' | 'attendance' | 'activity'>('directory');
-  const [staff, setStaff] = useState<StaffMember[]>(DUMMY_STAFF);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,6 +67,40 @@ export const StaffManagementSection = () => {
     shift: SHIFTS[0]
   });
 
+  const fetchStaff = () => {
+    const token = localStorage.getItem('canteenly_token');
+    fetch('/api/admin/staff', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.success && Array.isArray(resData.data)) {
+          const mapped = resData.data.map((item: any) => ({
+            id: item._id || item.id,
+            staffId: item.staffId || `STF-${String(item._id || item.id).substring(0, 4)}`,
+            name: item.name,
+            role: item.role as StaffRole,
+            phone: item.phone || '',
+            email: item.email || '',
+            shift: item.shift as ShiftTiming,
+            joiningDate: item.joiningDate ? new Date(item.joiningDate).toISOString().split('T')[0] : '',
+            isActive: item.isActive !== false,
+            attendanceStatus: (item.attendanceStatus || 'Absent') as 'Present' | 'Absent' | 'Late',
+            ordersHandled: item.ordersHandled || 0,
+            lastActive: item.lastActive || 'Never'
+          }));
+          setStaff(mapped);
+        }
+      })
+      .catch(err => console.error("Failed to fetch staff members", err));
+  };
+
+  useEffect(() => {
+    fetchStaff();
+  }, []);
+
   const filteredStaff = staff.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           s.staffId.toLowerCase().includes(searchQuery.toLowerCase());
@@ -75,29 +109,86 @@ export const StaffManagementSection = () => {
   });
 
   const handleToggleStatus = (id: string) => {
-    setStaff(prev => prev.map(s => s.id === id ? { ...s, isActive: !s.isActive } : s));
+    const member = staff.find(s => s.id === id);
+    if (!member) return;
+
+    const token = localStorage.getItem('canteenly_token');
+    fetch(`/api/admin/staff/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        isActive: !member.isActive
+      })
+    })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.success) {
+          setStaff(prev => prev.map(s => s.id === id ? { ...s, isActive: !s.isActive } : s));
+        }
+      })
+      .catch(err => console.error("Failed to toggle staff status", err));
   };
 
   const handleDeleteStaff = (id: string) => {
-    setStaff(prev => prev.filter(s => s.id !== id));
+    const token = localStorage.getItem('canteenly_token');
+    fetch(`/api/admin/staff/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.success) {
+          setStaff(prev => prev.filter(s => s.id !== id));
+        }
+      })
+      .catch(err => console.error("Failed to delete staff member", err));
   };
 
   const handleAddOrEdit = (e: React.FormEvent) => {
     e.preventDefault();
+    const token = localStorage.getItem('canteenly_token');
+
     if (editingStaff) {
-      setStaff(prev => prev.map(s => s.id === editingStaff.id ? { ...s, ...formData } : s));
+      fetch(`/api/admin/staff/${editingStaff.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      })
+        .then(res => res.json())
+        .then(resData => {
+          if (resData.success) {
+            fetchStaff();
+          }
+        })
+        .catch(err => console.error("Failed to update staff member", err));
     } else {
-      const newStaff: StaffMember = {
-        id: Math.random().toString(36).substring(2, 11),
-        staffId: `STF-${(staff.length + 1).toString().padStart(3, '0')}`,
+      const payload = {
         ...formData,
-        joiningDate: new Date().toISOString().split('T')[0],
-        isActive: true,
-        attendanceStatus: 'Absent',
-        ordersHandled: 0,
-        lastActive: 'Never'
+        staffId: `STF-${(staff.length + 1).toString().padStart(3, '0')}`
       };
-      setStaff(prev => [...prev, newStaff]);
+      fetch('/api/admin/staff', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      })
+        .then(res => res.json())
+        .then(resData => {
+          if (resData.success) {
+            fetchStaff();
+          }
+        })
+        .catch(err => console.error("Failed to add staff member", err));
     }
     setIsModalOpen(false);
     setEditingStaff(null);

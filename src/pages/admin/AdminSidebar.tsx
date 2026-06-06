@@ -20,7 +20,7 @@ import { cn } from '../../lib/utils';
 
 export type AdminTab = 
   | 'overview' | 'orders' | 'food' | 'inventory' 
-  | 'users' | 'staff' 
+  | 'staff' 
   | 'feedback' | 'notifications' | 'settings';
 
 interface AdminSidebarProps {
@@ -33,7 +33,6 @@ const navItems = [
   { id: 'orders', label: 'Live Orders', icon: ShoppingBag },
   { id: 'food', label: 'Food Menu', icon: Utensils },
   { id: 'inventory', label: 'Inventory', icon: PackageSearch },
-  { id: 'users', label: 'Users', icon: Users },
   { id: 'staff', label: 'Staff', icon: UserSquare2 },
   { id: 'feedback', label: 'Feedback', icon: MessageSquare },
   { id: 'notifications', label: 'Alerts', icon: Bell },

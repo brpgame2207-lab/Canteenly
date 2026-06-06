@@ -16,6 +16,7 @@ type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed';
 
 interface Order {
   id: string;
+  dbId: string;
   user: string;
   items: { name: string; qty: number }[];
   total: number;
@@ -25,17 +26,74 @@ interface Order {
   completedAt?: number;
 }
 
-const DUMMY_ORDERS: Order[] = [
-  { id: '#ORD-4821', user: 'Rahul Kumar', items: [{ name: 'Masala Dosa', qty: 2 }, { name: 'Filter Coffee', qty: 2 }], total: 160, status: 'pending', time: '2m ago', isPriority: true },
-  { id: '#ORD-4822', user: 'Priya Singh', items: [{ name: 'Paneer Butter Masala', qty: 1 }, { name: 'Naan', qty: 3 }], total: 250, status: 'pending', time: '5m ago' },
-  { id: '#ORD-4819', user: 'Amit Patel', items: [{ name: 'Veg Biryani', qty: 1 }], total: 120, status: 'preparing', time: '12m ago' },
-  { id: '#ORD-4818', user: 'Neha Gupta', items: [{ name: 'Cold Coffee', qty: 1 }, { name: 'Grilled Sandwich', qty: 1 }], total: 150, status: 'ready', time: '18m ago' },
-  { id: '#ORD-4817', user: 'Vikram Sharma', items: [{ name: 'Chole Bhature', qty: 2 }], total: 180, status: 'completed', time: '25m ago' },
-];
+const timeAgo = (dateStr: string) => {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs}h ago`;
+};
 
 export const LiveOrdersSection = () => {
   const [activeTab, setActiveTab] = useState<OrderStatus | 'all'>('all');
-  const [orders, setOrders] = useState(DUMMY_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  const fetchOrders = () => {
+    const token = localStorage.getItem('canteenly_token');
+    fetch('/api/orders', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.success && Array.isArray(resData.data)) {
+          const now = Date.now();
+          const THREE_MINUTES = 3 * 60 * 1000;
+
+          const mapped = resData.data
+            .map((item: any) => {
+              let status: OrderStatus = 'pending';
+              if (item.status === 'Preparing') status = 'preparing';
+              else if (item.status === 'Ready') status = 'ready';
+              else if (item.status === 'Delivered') status = 'completed';
+
+              const completedTime = item.status === 'Delivered' ? new Date(item.createdAt).getTime() : undefined;
+
+              return {
+                id: item.tokenNumber ? `#ORD-${item.tokenNumber}` : `#ORD-${String(item._id).substring(18)}`,
+                dbId: item._id,
+                user: item.userId?.name || 'Student User',
+                items: item.items.map((it: any) => ({
+                  name: it.menuItemId?.name || 'Unknown Item',
+                  qty: it.quantity
+                })),
+                total: item.totalAmount,
+                status,
+                time: timeAgo(item.createdAt),
+                isPriority: item.totalAmount > 300,
+                completedAt: completedTime
+              } as Order;
+            })
+            .filter(order => {
+              // Hide completed orders that are older than 3 minutes
+              if (order.status === 'completed' && order.completedAt) {
+                return now - order.completedAt < THREE_MINUTES;
+              }
+              return true;
+            });
+          setOrders(mapped);
+        }
+      })
+      .catch(err => console.error("Failed to fetch live orders", err));
+  };
+
+  useEffect(() => {
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const tabs = [
     { id: 'all', label: 'All Orders', count: orders.length },
@@ -46,30 +104,30 @@ export const LiveOrdersSection = () => {
 
   const filteredOrders = activeTab === 'all' ? orders : orders.filter(o => o.status === activeTab);
 
-  const updateOrderStatus = (id: string, newStatus: OrderStatus) => {
-    setOrders(orders.map(o => 
-      o.id === id ? { ...o, status: newStatus, completedAt: newStatus === 'completed' ? Date.now() : undefined } : o
-    ));
+  const updateOrderStatus = async (orderId: string, dbId: string, newStatus: OrderStatus) => {
+    let backendStatus = 'Pending';
+    if (newStatus === 'preparing') backendStatus = 'Preparing';
+    else if (newStatus === 'ready') backendStatus = 'Ready';
+    else if (newStatus === 'completed') backendStatus = 'Delivered';
+
+    const token = localStorage.getItem('canteenly_token');
+    try {
+      const response = await fetch(`/api/orders/${dbId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: backendStatus })
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchOrders();
+      }
+    } catch (err) {
+      console.error("Failed to update order status", err);
+    }
   };
-
-  // Timer for disappearing completed orders
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const THREE_MINUTES = 3 * 60 * 1000;
-      
-      setOrders(currentOrders => 
-        currentOrders.filter(order => {
-          if (order.status === 'completed' && order.completedAt) {
-            return now - order.completedAt < THREE_MINUTES;
-          }
-          return true;
-        })
-      );
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-140px)] flex flex-col">
@@ -177,7 +235,7 @@ export const LiveOrdersSection = () => {
                   <div className="flex gap-2">
                     {order.status === 'pending' && (
                       <button 
-                        onClick={() => updateOrderStatus(order.id, 'preparing')}
+                        onClick={() => updateOrderStatus(order.id, order.dbId, 'preparing')}
                         className="bg-brand hover:bg-brand-light text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(255,107,0,0.3)] flex items-center gap-2"
                       >
                         Accept
@@ -185,7 +243,7 @@ export const LiveOrdersSection = () => {
                     )}
                     {order.status === 'preparing' && (
                       <button 
-                        onClick={() => updateOrderStatus(order.id, 'ready')}
+                        onClick={() => updateOrderStatus(order.id, order.dbId, 'ready')}
                         className="bg-green-500 hover:bg-green-400 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] flex items-center gap-2"
                       >
                         Mark Ready
@@ -193,7 +251,7 @@ export const LiveOrdersSection = () => {
                     )}
                     {order.status === 'ready' && (
                       <button 
-                        onClick={() => updateOrderStatus(order.id, 'completed')}
+                        onClick={() => updateOrderStatus(order.id, order.dbId, 'completed')}
                         className="bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
                       >
                         Complete
