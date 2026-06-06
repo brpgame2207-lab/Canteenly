@@ -4,7 +4,7 @@ import {
   Users, UserPlus, Search, Filter, Clock, Calendar, 
   CheckCircle2, XCircle, MoreVertical, Edit3, Trash2, 
   Shield, ShieldOff, Phone, Mail, BadgeCheck, Activity,
-  AlertCircle, Bell, History, ShoppingBag, ChevronRight
+  AlertCircle, Bell, History, ShoppingBag, ChevronRight, X
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 

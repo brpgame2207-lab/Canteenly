@@ -48,7 +48,9 @@ exports.placeOrder = async (req, res, next) => {
 
 exports.getMyOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find({ userId: req.user.id }).sort('-createdAt');
+    const orders = await Order.find({ userId: req.user.id })
+      .populate('items.menuItemId')
+      .sort('-createdAt');
     res.status(200).json({ success: true, count: orders.length, data: orders });
   } catch (err) {
     next(err);

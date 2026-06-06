@@ -10,6 +10,7 @@ import { StudentNavbar } from './components/StudentNavbar';
 import { LandingPage } from './pages/LandingPage';
 import { MenuPage } from './pages/MenuPage';
 import { CartPage } from './pages/CartPage';
+import { YourOrdersPage } from './pages/YourOrdersPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { TrackingPage } from './pages/TrackingPage';
 import { LoginPage } from './pages/LoginPage';
@@ -81,6 +82,7 @@ const AppContent = () => {
           {/* Protected Routes */}
           <Route path="/menu" element={<AuthGuard><MenuPage /></AuthGuard>} />
           <Route path="/cart" element={<AuthGuard><CartPage /></AuthGuard>} />
+          <Route path="/orders" element={<AuthGuard><YourOrdersPage /></AuthGuard>} />
           <Route path="/tracking" element={<AuthGuard><TrackingPage /></AuthGuard>} />
           
           {/* Admin Route */}

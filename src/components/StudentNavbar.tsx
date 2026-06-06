@@ -24,6 +24,12 @@ export const StudentNavbar = () => {
         </Link>
 
         <div className="flex items-center gap-4">
+          <Link to="/orders" className="relative">
+            <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white" title="Your Orders">
+              <History size={20} />
+            </Button>
+          </Link>
+
           <Link to="/cart" className="relative">
             <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white">
               <ShoppingCart size={20} />

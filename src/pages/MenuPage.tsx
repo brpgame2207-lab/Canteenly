@@ -8,15 +8,14 @@ import { cn } from '../lib/utils';
 import { HeroBanner } from '../components/menu/HeroBanner';
 import { FilterBar } from '../components/menu/FilterBar';
 import { PremiumFoodCard, FoodItem } from '../components/menu/PremiumFoodCard';
-import { CartSidebar } from '../components/menu/CartSidebar';
 
 export const MenuPage = () => {
   const [rawMenu, setRawMenu] = useState<any[]>([]);
   const [enrichedMenu, setEnrichedMenu] = useState<FoodItem[]>([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInputValue, setSearchInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isCartOpen, setIsCartOpen] = useState(false);
   
   const [filters, setFilters] = useState({
     diet: null as 'veg' | 'non-veg' | null,
@@ -119,22 +118,31 @@ export const MenuPage = () => {
           </div>
 
           {/* Smart Search Bar */}
-          <div className="relative flex-1 max-w-xl group">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSearchQuery(searchInputValue);
+            }}
+            className="relative flex-1 max-w-xl group"
+          >
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-brand transition-colors" size={18} />
             <input 
               type="text"
               placeholder="Search for your favorite meals..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchInputValue}
+              onChange={(e) => setSearchInputValue(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-full pl-12 pr-24 py-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:bg-white/10 transition-all shadow-inner"
             />
-            <button className={cn(
-              "absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-full premium-gradient text-white text-[10px] font-bold uppercase tracking-wider shadow-lg transition-all duration-300",
-              searchQuery ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 pointer-events-none group-focus-within:opacity-100 group-focus-within:translate-x-0 group-focus-within:pointer-events-auto"
-            )}>
+            <button 
+              type="submit"
+              className={cn(
+                "absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-full premium-gradient text-white text-[10px] font-bold uppercase tracking-wider shadow-lg transition-all duration-300",
+                searchInputValue ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 pointer-events-none group-focus-within:opacity-100 group-focus-within:translate-x-0 group-focus-within:pointer-events-auto"
+              )}
+            >
               Search
             </button>
-          </div>
+          </form>
 
           {/* Veg/Non-Veg Toggle in Header */}
           <div className="flex items-center bg-white/5 border border-white/10 rounded-full p-1 gap-0.5 sm:gap-1 scale-90 sm:scale-100">
@@ -169,24 +177,11 @@ export const MenuPage = () => {
             </button>
           </div>
 
-          {/* Icons: Notifications & Cart */}
+          {/* Icons: Notifications */}
           <div className="flex items-center gap-3 shrink-0">
             <button className="relative p-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors hidden sm:block">
               <Bell size={20} className="text-neutral-300" />
               <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-brand rounded-full border-2 border-[#0c0c0c]"></span>
-            </button>
-            
-            <button 
-              onClick={() => setIsCartOpen(true)}
-              className="relative flex items-center gap-2 p-2.5 sm:px-5 sm:py-2.5 rounded-full premium-gradient shadow-[0_0_20px_rgba(255,107,0,0.2)] hover:shadow-[0_0_30px_rgba(255,107,0,0.4)] transition-all duration-300"
-            >
-              <ShoppingBag size={20} className="text-white" />
-              <span className="hidden sm:block font-bold text-white text-sm">₹{total}</span>
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 sm:static sm:top-auto sm:right-auto bg-white text-brand text-[10px] sm:text-xs font-black w-5 h-5 flex items-center justify-center rounded-full shadow-lg">
-                  {cartItemCount}
-                </span>
-              )}
             </button>
           </div>
         </div>
@@ -240,6 +235,7 @@ export const MenuPage = () => {
                 </p>
                 <button 
                   onClick={() => {
+                    setSearchInputValue('');
                     setSearchQuery('');
                     setFilters({ diet: null, bestseller: false, fastPrep: false, spicy: false, healthy: false });
                     setActiveCategory('All');
@@ -254,8 +250,6 @@ export const MenuPage = () => {
         </div>
       </div>
 
-      {/* ── Floating Cart Sidebar ── */}
-      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       
     </div>
   );

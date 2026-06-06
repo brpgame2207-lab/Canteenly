@@ -10,11 +10,11 @@ interface PaymentMethodsProps {
 }
 
 export const PaymentMethods: React.FC<PaymentMethodsProps> = ({ selectedMethod, setSelectedMethod }) => {
-  const methods = [
+  const methods: { id: PaymentMethod; name: string; icon: any; balance?: string; desc?: string }[] = [
     { id: 'wallet', name: 'Campus Wallet', icon: Wallet, balance: '₹450' },
     { id: 'upi', name: 'UPI', icon: Smartphone, desc: 'GPay, PhonePe' },
     { id: 'cash', name: 'Cash', icon: Banknote, desc: 'Pay at counter' },
-  ] as const;
+  ];
 
   return (
     <div className="glass-card rounded-[2rem] p-6 sm:p-8 mt-6">
