@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, X, Utensils, Trash2, Edit3, IndianRupee, Tag, FileText, Leaf, Drumstick, Egg, Filter, PackageCheck, Coffee } from 'lucide-react';
 import { cn } from '../../../lib/utils';
@@ -58,6 +58,36 @@ export const FoodMenuSection = () => {
   const [formBev, setFormBev] = useState('None');
   const [formIsCombo, setFormIsCombo] = useState(false);
 
+  // Fetch items from DB
+  const fetchItems = () => {
+    fetch('/api/menu')
+      .then(res => res.json())
+      .then(resData => {
+        const data = resData.data || resData;
+        if (Array.isArray(data)) {
+          const mapped = data.map(item => ({
+            id: item._id || item.id,
+            name: item.name,
+            description: item.description,
+            price: item.price,
+            mealType: item.mealType || item.category || 'Snacks',
+            cuisineStyle: item.cuisineStyle || 'South Indian',
+            dietType: (item.dietType || 'Veg') as 'Veg' | 'Non-Veg' | 'Egg',
+            beverageType: item.beverageType || 'None',
+            image: item.image || PLACEHOLDER_IMAGES[0],
+            isAvailable: item.available !== false,
+            isComboOffer: item.isComboOffer || false
+          }));
+          setItems(mapped);
+        }
+      })
+      .catch(err => console.error("Failed to fetch menu items", err));
+  };
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
   const resetForm = () => {
     setFormName(''); setFormDesc(''); setFormPrice('');
     setFormMeal(MEAL_TYPES[0]); setFormStyle(CUISINE_STYLES[0]);
@@ -75,24 +105,100 @@ export const FoodMenuSection = () => {
     setFormIsCombo(item.isComboOffer); setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formPrice.trim()) return;
-    if (editingItem) {
-      setItems(items.map(i => i.id === editingItem.id ? { ...i, name: formName, description: formDesc, price: Number(formPrice), mealType: formMeal, cuisineStyle: formStyle, dietType: formDiet, beverageType: formBev, isComboOffer: formIsCombo } : i));
-    } else {
-      setItems([...items, {
-        id: `item-${Date.now()}`, name: formName, description: formDesc || 'A delicious dish freshly prepared.',
-        price: Number(formPrice), mealType: formMeal, cuisineStyle: formStyle, dietType: formDiet,
-        beverageType: formBev, image: PLACEHOLDER_IMAGES[items.length % PLACEHOLDER_IMAGES.length],
-        isAvailable: true, isComboOffer: formIsCombo,
-      }]);
+
+    const token = localStorage.getItem('canteenly_token');
+    const payload = {
+      name: formName,
+      description: formDesc || 'A delicious dish freshly prepared.',
+      price: Number(formPrice),
+      category: formMeal,
+      mealType: formMeal,
+      cuisineStyle: formStyle,
+      dietType: formDiet,
+      beverageType: formBev,
+      isComboOffer: formIsCombo,
+      image: editingItem ? editingItem.image : PLACEHOLDER_IMAGES[items.length % PLACEHOLDER_IMAGES.length],
+      available: editingItem ? editingItem.isAvailable : true
+    };
+
+    try {
+      if (editingItem) {
+        const res = await fetch(`/api/menu/${editingItem.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const resData = await res.json();
+        if (resData.success) {
+          fetchItems();
+        }
+      } else {
+        const res = await fetch('/api/menu', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const resData = await res.json();
+        if (resData.success) {
+          fetchItems();
+        }
+      }
+    } catch (err) {
+      console.error("Failed to save menu item", err);
     }
+
     setIsModalOpen(false); resetForm();
   };
 
-  const deleteItem = (id: string) => setItems(items.filter(i => i.id !== id));
-  const toggleAvailability = (id: string) => setItems(items.map(i => i.id === id ? { ...i, isAvailable: !i.isAvailable } : i));
+  const deleteItem = (id: string) => {
+    const token = localStorage.getItem('canteenly_token');
+    fetch(`/api/menu/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.success) {
+          setItems(items.filter(i => i.id !== id));
+        }
+      })
+      .catch(err => console.error("Failed to delete item", err));
+  };
+
+  const toggleAvailability = (id: string) => {
+    const itemToToggle = items.find(i => i.id === id);
+    if (!itemToToggle) return;
+
+    const token = localStorage.getItem('canteenly_token');
+    fetch(`/api/menu/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        available: !itemToToggle.isAvailable
+      })
+    })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.success) {
+          setItems(items.map(i => i.id === id ? { ...i, isAvailable: !i.isAvailable } : i));
+        }
+      })
+      .catch(err => console.error("Failed to toggle availability", err));
+  };
 
   const filteredItems = items.filter(i => {
     if (filterMeal && i.mealType !== filterMeal) return false;
