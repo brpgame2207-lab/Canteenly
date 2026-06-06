@@ -14,8 +14,9 @@ connectDB();
 
 const app = express();
 
-// Body parser
-app.use(express.json());
+// Body parser with size limits for base64 image uploads
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 // Enable CORS
 app.use(cors());

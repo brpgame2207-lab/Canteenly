@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
-type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed';
+type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 
 interface Order {
   id: string;
@@ -58,8 +58,9 @@ export const LiveOrdersSection = () => {
               if (item.status === 'Preparing') status = 'preparing';
               else if (item.status === 'Ready') status = 'ready';
               else if (item.status === 'Delivered') status = 'completed';
+              else if (item.status === 'Cancelled') status = 'cancelled';
 
-              const completedTime = item.status === 'Delivered' ? new Date(item.createdAt).getTime() : undefined;
+              const completedTime = (item.status === 'Delivered' || item.status === 'Cancelled') ? new Date(item.createdAt).getTime() : undefined;
 
               return {
                 id: item.tokenNumber ? `#ORD-${item.tokenNumber}` : `#ORD-${String(item._id).substring(18)}`,
@@ -77,6 +78,7 @@ export const LiveOrdersSection = () => {
               } as Order;
             })
             .filter(order => {
+              if (order.status === 'cancelled') return false;
               // Hide completed orders that are older than 3 minutes
               if (order.status === 'completed' && order.completedAt) {
                 return now - order.completedAt < THREE_MINUTES;
@@ -109,6 +111,7 @@ export const LiveOrdersSection = () => {
     if (newStatus === 'preparing') backendStatus = 'Preparing';
     else if (newStatus === 'ready') backendStatus = 'Ready';
     else if (newStatus === 'completed') backendStatus = 'Delivered';
+    else if (newStatus === 'cancelled') backendStatus = 'Cancelled';
 
     const token = localStorage.getItem('canteenly_token');
     try {
@@ -258,7 +261,10 @@ export const LiveOrdersSection = () => {
                       </button>
                     )}
                     {order.status === 'pending' && (
-                      <button className="h-9 w-9 rounded-xl bg-white/5 hover:bg-red-500/20 hover:text-red-500 border border-white/10 flex items-center justify-center text-neutral-400 transition-all">
+                      <button 
+                        onClick={() => updateOrderStatus(order.id, order.dbId, 'cancelled')}
+                        className="h-9 w-9 rounded-xl bg-white/5 hover:bg-red-500/20 hover:text-red-500 border border-white/10 flex items-center justify-center text-neutral-400 transition-all"
+                      >
                         <XCircle size={18} />
                       </button>
                     )}

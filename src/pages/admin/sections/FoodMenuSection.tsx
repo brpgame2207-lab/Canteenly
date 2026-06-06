@@ -57,6 +57,18 @@ export const FoodMenuSection = () => {
   const [formDiet, setFormDiet] = useState<'Veg'|'Non-Veg'|'Egg'>('Veg');
   const [formBev, setFormBev] = useState('None');
   const [formIsCombo, setFormIsCombo] = useState(false);
+  const [formImage, setFormImage] = useState<string | null>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Fetch items from DB
   const fetchItems = () => {
@@ -92,6 +104,7 @@ export const FoodMenuSection = () => {
     setFormName(''); setFormDesc(''); setFormPrice('');
     setFormMeal(MEAL_TYPES[0]); setFormStyle(CUISINE_STYLES[0]);
     setFormDiet('Veg'); setFormBev('None'); setFormIsCombo(false);
+    setFormImage(null);
     setEditingItem(null);
   };
 
@@ -102,7 +115,9 @@ export const FoodMenuSection = () => {
     setFormName(item.name); setFormDesc(item.description); setFormPrice(String(item.price));
     setFormMeal(item.mealType); setFormStyle(item.cuisineStyle);
     setFormDiet(item.dietType); setFormBev(item.beverageType);
-    setFormIsCombo(item.isComboOffer); setIsModalOpen(true);
+    setFormIsCombo(item.isComboOffer);
+    setFormImage(item.image);
+    setIsModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,7 +135,7 @@ export const FoodMenuSection = () => {
       dietType: formDiet,
       beverageType: formBev,
       isComboOffer: formIsCombo,
-      image: editingItem ? editingItem.image : PLACEHOLDER_IMAGES[items.length % PLACEHOLDER_IMAGES.length],
+      image: formImage || (editingItem ? editingItem.image : PLACEHOLDER_IMAGES[items.length % PLACEHOLDER_IMAGES.length]),
       available: editingItem ? editingItem.isAvailable : true
     };
 
@@ -341,6 +356,41 @@ export const FoodMenuSection = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Image Upload */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                    Dish Image
+                  </label>
+                  <div className="flex gap-4 items-center">
+                    {formImage ? (
+                      <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10 shrink-0">
+                        <img src={formImage} alt="Preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setFormImage(null)}
+                          className="absolute top-1 right-1 bg-red-500 hover:bg-red-400 text-white rounded-full p-0.5"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-neutral-600 shrink-0">
+                        <Utensils size={28} />
+                      </div>
+                    )}
+                    <label className="flex-1 cursor-pointer flex flex-col items-center justify-center border border-dashed border-white/20 hover:border-brand/50 rounded-xl p-4 transition-colors hover:bg-white/5">
+                      <Plus size={20} className="text-neutral-400 mb-1" />
+                      <span className="text-xs font-bold text-neutral-400">Upload Image File</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
                 {/* Name */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider ml-1 flex items-center gap-1.5"><Utensils size={12} /> Dish Name</label>

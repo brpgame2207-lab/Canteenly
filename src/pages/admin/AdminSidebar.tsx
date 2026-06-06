@@ -19,9 +19,9 @@ import {
 import { cn } from '../../lib/utils';
 
 export type AdminTab = 
-  | 'overview' | 'orders' | 'food' | 'inventory' 
+  | 'overview' | 'orders' | 'food' 
   | 'staff' 
-  | 'feedback' | 'notifications' | 'settings';
+  | 'settings';
 
 interface AdminSidebarProps {
   activeTab: AdminTab;
@@ -32,10 +32,7 @@ const navItems = [
   { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'orders', label: 'Live Orders', icon: ShoppingBag },
   { id: 'food', label: 'Food Menu', icon: Utensils },
-  { id: 'inventory', label: 'Inventory', icon: PackageSearch },
   { id: 'staff', label: 'Staff', icon: UserSquare2 },
-  { id: 'feedback', label: 'Feedback', icon: MessageSquare },
-  { id: 'notifications', label: 'Alerts', icon: Bell },
   { id: 'settings', label: 'Settings', icon: Settings },
 ] as const;
 
@@ -84,11 +81,6 @@ export const AdminSidebar = ({ activeTab, setActiveTab }: AdminSidebarProps) => 
               activeTab === item.id ? "text-brand" : "group-hover:text-neutral-300"
             )} />
             {item.label}
-            {item.id === 'inventory' && (
-              <span className="ml-auto bg-red-500/20 text-red-500 border border-red-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                3
-              </span>
-            )}
           </button>
         ))}
       </div>

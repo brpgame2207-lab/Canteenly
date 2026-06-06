@@ -59,10 +59,25 @@ exports.getMyOrders = async (req, res, next) => {
 
 exports.updateOrderStatus = async (req, res, next) => {
   try {
+    const originalOrder = await Order.findById(req.params.id).populate('items.menuItemId');
     const order = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, {
       new: true,
       runValidators: true
     });
+
+    if (req.body.status === 'Cancelled' && originalOrder && originalOrder.status !== 'Cancelled') {
+      const Inventory = require('../models/Inventory');
+      for (const item of originalOrder.items) {
+        if (item.menuItemId && item.menuItemId.name) {
+          const inventory = await Inventory.findOne({ itemName: item.menuItemId.name });
+          if (inventory) {
+            inventory.quantity += item.quantity;
+            await inventory.save();
+          }
+        }
+      }
+    }
+
     res.status(200).json({ success: true, data: order });
   } catch (err) {
     next(err);

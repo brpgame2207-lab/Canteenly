@@ -271,8 +271,8 @@ export const StaffManagementSection = () => {
                     onChange={(e) => setRoleFilter(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white appearance-none focus:outline-none focus:ring-2 focus:ring-brand/50"
                   >
-                    <option value="All">All Roles</option>
-                    {ROLES.map(role => <option key={role} value={role}>{role}</option>)}
+                    <option value="All" style={{ color: 'black', backgroundColor: 'white' }}>All Roles</option>
+                    {ROLES.map(role => <option key={role} value={role} style={{ color: 'black', backgroundColor: 'white' }}>{role}</option>)}
                   </select>
                 </div>
               </div>
@@ -397,9 +397,9 @@ export const StaffManagementSection = () => {
                       <td className="px-6 py-4 text-xs text-neutral-400">06:02 AM</td>
                       <td className="px-6 py-4">
                         <select className={cn("bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[10px] font-bold uppercase", member.attendanceStatus === 'Present' ? "text-green-400" : "text-yellow-400")} defaultValue={member.attendanceStatus}>
-                          <option value="Present">Present</option>
-                          <option value="Absent">Absent</option>
-                          <option value="Late">Late</option>
+                          <option value="Present" style={{ color: 'black', backgroundColor: 'white' }}>Present</option>
+                          <option value="Absent" style={{ color: 'black', backgroundColor: 'white' }}>Absent</option>
+                          <option value="Late" style={{ color: 'black', backgroundColor: 'white' }}>Late</option>
                         </select>
                       </td>
                       <td className="px-6 py-4 text-right"><button className="text-[10px] font-bold text-brand hover:underline">History</button></td>
@@ -468,14 +468,14 @@ export const StaffManagementSection = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider ml-1">Role</label>
-                    <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value as StaffRole})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm text-white appearance-none">
-                      {ROLES.map(role => <option key={role} value={role} className="bg-[#1a1a1a]">{role}</option>)}
+                    <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value as StaffRole})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm text-white appearance-none focus:outline-none focus:ring-2 focus:ring-brand/50">
+                      {ROLES.map(role => <option key={role} value={role} style={{ color: 'black', backgroundColor: 'white' }}>{role}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider ml-1">Shift</label>
-                    <select value={formData.shift} onChange={e => setFormData({...formData, shift: e.target.value as ShiftTiming})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm text-white appearance-none">
-                      {SHIFTS.map(shift => <option key={shift} value={shift} className="bg-[#1a1a1a]">{shift}</option>)}
+                    <select value={formData.shift} onChange={e => setFormData({...formData, shift: e.target.value as ShiftTiming})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm text-white appearance-none focus:outline-none focus:ring-2 focus:ring-brand/50">
+                      {SHIFTS.map(shift => <option key={shift} value={shift} style={{ color: 'black', backgroundColor: 'white' }}>{shift}</option>)}
                     </select>
                   </div>
                 </div>

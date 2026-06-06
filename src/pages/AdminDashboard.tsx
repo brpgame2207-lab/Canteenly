@@ -19,14 +19,8 @@ export const AdminDashboard = () => {
         return <LiveOrdersSection />;
       case 'food':
         return <FoodMenuSection />;
-      case 'inventory':
-        return <PlaceholderSection title="Inventory Control" description="Track stock levels, raw materials, and get low-stock alerts." />;
       case 'staff':
         return <StaffManagementSection />;
-      case 'feedback':
-        return <PlaceholderSection title="Feedback & Ratings" description="Review student feedback, handle complaints, and manage ratings." />;
-      case 'notifications':
-        return <PlaceholderSection title="Notification Center" description="Send push notifications, announcements, and promotional offers." />;
       case 'settings':
         return <PlaceholderSection title="System Settings" description="Configure global canteen timings, tax rates, and security policies." />;
       default:

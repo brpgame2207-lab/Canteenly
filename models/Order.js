@@ -13,7 +13,7 @@ const OrderSchema = new mongoose.Schema({
   tokenNumber: { type: Number, unique: true },
   status: {
     type: String,
-    enum: ['Pending', 'Preparing', 'Ready', 'Delivered'],
+    enum: ['Pending', 'Preparing', 'Ready', 'Delivered', 'Cancelled'],
     default: 'Pending'
   },
   paymentStatus: {
