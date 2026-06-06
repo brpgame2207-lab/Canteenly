@@ -20,6 +20,50 @@ export const CartPage = () => {
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [discount, setDiscount] = useState<number>(0);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('wallet');
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  const handleCheckout = async () => {
+    if (items.length === 0) return;
+    setIsCheckingOut(true);
+
+    const token = localStorage.getItem('canteenly_token');
+    try {
+      // 1. Synchronize the client's React cart to MongoDB
+      const syncRes = await fetch('/api/cart/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ items })
+      });
+      const syncData = await syncRes.json();
+      if (!syncData.success) {
+        console.error("Cart synchronization failed");
+        setIsCheckingOut(false);
+        return;
+      }
+
+      // 2. Place the order on the backend
+      const orderRes = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const orderData = await orderRes.json();
+      if (orderData.success) {
+        clearCart();
+        navigate('/tracking');
+      } else {
+        console.error("Failed to place order:", orderData.message);
+      }
+    } catch (err) {
+      console.error("Checkout network error:", err);
+    }
+    setIsCheckingOut(false);
+  };
 
   // Calculate live order insights
   const maxPrepTime = items.reduce((max, item) => {
@@ -161,12 +205,10 @@ export const CartPage = () => {
           <Button 
             size="lg" 
             className="premium-gradient shadow-[0_0_30px_rgba(255,107,0,0.3)] h-14 px-8 rounded-full"
-            onClick={() => {
-              navigate('/tracking');
-              clearCart();
-            }}
+            onClick={handleCheckout}
+            disabled={isCheckingOut}
           >
-            Checkout <ArrowRight size={18} className="ml-2" />
+            {isCheckingOut ? 'Processing...' : 'Checkout'} <ArrowRight size={18} className="ml-2" />
           </Button>
         </div>
       </motion.div>
@@ -176,12 +218,10 @@ export const CartPage = () => {
         <Button 
           size="lg" 
           className="premium-gradient shadow-[0_0_40px_rgba(255,107,0,0.4)] hover:shadow-[0_0_60px_rgba(255,107,0,0.6)] h-16 px-10 rounded-full text-lg group transition-all"
-          onClick={() => {
-            navigate('/tracking');
-            clearCart();
-          }}
+          onClick={handleCheckout}
+          disabled={isCheckingOut}
         >
-          Checkout securely
+          {isCheckingOut ? 'Processing securely...' : 'Checkout securely'}
           <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
         </Button>
       </div>

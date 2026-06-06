@@ -9,10 +9,17 @@ exports.placeOrder = async (req, res, next) => {
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({ success: false, message: 'Cart is empty' });
     }
-    const orderItems = cart.items.map(item => ({
+    
+    // Filter out items where menuItemId is missing/deleted from the database
+    const validItems = cart.items.filter(item => item && item.menuItemId);
+    if (validItems.length === 0) {
+      return res.status(400).json({ success: false, message: 'Cart contains no valid menu items' });
+    }
+
+    const orderItems = validItems.map(item => ({
       menuItemId: item.menuItemId._id,
       quantity: item.quantity,
-      price: item.menuItemId.price
+      price: item.menuItemId.price || 0
     }));
     const tokenNumber = Math.floor(1000 + Math.random() * 9000);
     const order = await Order.create({
@@ -22,11 +29,13 @@ exports.placeOrder = async (req, res, next) => {
       tokenNumber,
       status: 'Pending'
     });
-    for (const item of cart.items) {
-      const inventory = await Inventory.findOne({ itemName: item.menuItemId.name });
-      if (inventory) {
-        inventory.quantity -= item.quantity;
-        await inventory.save();
+    for (const item of validItems) {
+      if (item.menuItemId.name) {
+        const inventory = await Inventory.findOne({ itemName: item.menuItemId.name });
+        if (inventory) {
+          inventory.quantity -= item.quantity;
+          await inventory.save();
+        }
       }
     }
     await Cart.findOneAndDelete({ userId: req.user.id });
@@ -35,6 +44,7 @@ exports.placeOrder = async (req, res, next) => {
     next(err);
   }
 };
+
 
 exports.getMyOrders = async (req, res, next) => {
   try {

@@ -84,11 +84,6 @@ export const AdminSidebar = ({ activeTab, setActiveTab }: AdminSidebarProps) => 
               activeTab === item.id ? "text-brand" : "group-hover:text-neutral-300"
             )} />
             {item.label}
-            {item.id === 'orders' && (
-              <span className="ml-auto bg-brand text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(255,107,0,0.5)]">
-                12
-              </span>
-            )}
             {item.id === 'inventory' && (
               <span className="ml-auto bg-red-500/20 text-red-500 border border-red-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
                 3

@@ -38,21 +38,27 @@ export const OverviewSection = () => {
   } | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('canteenly_token');
-    fetch('/api/admin/stats', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-      .then(res => res.json())
-      .then(resData => {
-        if (resData.success && resData.data) {
-          setDbStats(resData.data);
+    const fetchStats = () => {
+      const token = localStorage.getItem('canteenly_token');
+      fetch('/api/admin/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
       })
-      .catch(err => {
-        console.error("Failed to fetch admin stats", err);
-      });
+        .then(res => res.json())
+        .then(resData => {
+          if (resData.success && resData.data) {
+            setDbStats(resData.data);
+          }
+        })
+        .catch(err => {
+          console.error("Failed to fetch admin stats", err);
+        });
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 1500);
+    return () => clearInterval(interval);
   }, []);
 
   const formatActiveUsers = (val: number) => {
@@ -65,28 +71,28 @@ export const OverviewSection = () => {
   const stats = [
     { 
       label: "Today's Revenue", 
-      value: dbStats !== null ? `₹${dbStats.todayRevenue.toLocaleString('en-IN')}` : "₹45,231", 
-      change: dbStats !== null ? (dbStats.todayRevenue > 0 ? "+12.5%" : "0%") : "+12.5%", 
+      value: dbStats !== null ? `₹${dbStats.todayRevenue.toLocaleString('en-IN')}` : "₹0", 
+      change: dbStats !== null ? (dbStats.todayRevenue > 0 ? "+12.5%" : "0%") : "0%", 
       trend: "up", 
       icon: IndianRupee 
     },
     { 
       label: "Total Orders", 
-      value: dbStats !== null ? dbStats.totalOrders.toLocaleString() : "842", 
-      change: dbStats !== null ? (dbStats.totalOrders > 0 ? "+18.2%" : "0%") : "+18.2%", 
+      value: dbStats !== null ? dbStats.totalOrders.toLocaleString() : "0", 
+      change: dbStats !== null ? (dbStats.totalOrders > 0 ? "+18.2%" : "0%") : "0%", 
       trend: "up", 
       icon: ShoppingBag 
     },
     { 
       label: "Active Users", 
-      value: dbStats !== null ? formatActiveUsers(dbStats.activeUsers) : "3.2k", 
-      change: dbStats !== null ? (dbStats.activeUsers > 0 ? "+5.0%" : "0%") : "-2.4%", 
+      value: dbStats !== null ? formatActiveUsers(dbStats.activeUsers) : "0", 
+      change: dbStats !== null ? (dbStats.activeUsers > 0 ? "+5.0%" : "0%") : "0%", 
       trend: dbStats !== null ? "up" : "down", 
       icon: Users 
     },
     { 
       label: "Pending Orders", 
-      value: dbStats !== null ? dbStats.pendingOrders.toString() : "24", 
+      value: dbStats !== null ? dbStats.pendingOrders.toString() : "0", 
       change: dbStats !== null && dbStats.pendingOrders > 0 ? "Requires Action" : "Live", 
       trend: dbStats !== null && dbStats.pendingOrders > 0 ? "alert" : "neutral", 
       icon: Clock 
@@ -100,7 +106,7 @@ export const OverviewSection = () => {
     },
     { 
       label: "Orders in Queue", 
-      value: dbStats !== null ? dbStats.ordersInQueue.toString() : "18", 
+      value: dbStats !== null ? dbStats.ordersInQueue.toString() : "0", 
       change: "Live", 
       trend: "neutral", 
       icon: Activity 
@@ -114,8 +120,8 @@ export const OverviewSection = () => {
     },
     { 
       label: "Total Items Sold", 
-      value: dbStats !== null ? dbStats.totalItemsSold.toLocaleString() : "1,245", 
-      change: dbStats !== null ? (dbStats.totalItemsSold > 0 ? "+14.2%" : "0%") : "+14.2%", 
+      value: dbStats !== null ? dbStats.totalItemsSold.toLocaleString() : "0", 
+      change: dbStats !== null ? (dbStats.totalItemsSold > 0 ? "+14.2%" : "0%") : "0%", 
       trend: "up", 
       icon: Package 
     },

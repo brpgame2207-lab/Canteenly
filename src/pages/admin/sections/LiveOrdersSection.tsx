@@ -91,7 +91,7 @@ export const LiveOrdersSection = () => {
 
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 5000);
+    const interval = setInterval(fetchOrders, 1500);
     return () => clearInterval(interval);
   }, []);
 
