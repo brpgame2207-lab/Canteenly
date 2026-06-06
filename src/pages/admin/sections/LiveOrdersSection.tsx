@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Clock, 
@@ -22,6 +22,7 @@ interface Order {
   status: OrderStatus;
   time: string;
   isPriority?: boolean;
+  completedAt?: number;
 }
 
 const DUMMY_ORDERS: Order[] = [
@@ -46,8 +47,29 @@ export const LiveOrdersSection = () => {
   const filteredOrders = activeTab === 'all' ? orders : orders.filter(o => o.status === activeTab);
 
   const updateOrderStatus = (id: string, newStatus: OrderStatus) => {
-    setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o));
+    setOrders(orders.map(o => 
+      o.id === id ? { ...o, status: newStatus, completedAt: newStatus === 'completed' ? Date.now() : undefined } : o
+    ));
   };
+
+  // Timer for disappearing completed orders
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const THREE_MINUTES = 3 * 60 * 1000;
+      
+      setOrders(currentOrders => 
+        currentOrders.filter(order => {
+          if (order.status === 'completed' && order.completedAt) {
+            return now - order.completedAt < THREE_MINUTES;
+          }
+          return true;
+        })
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-140px)] flex flex-col">
@@ -144,6 +166,13 @@ export const LiveOrdersSection = () => {
                     <Timer size={16} />
                     <span>{order.time}</span>
                   </div>
+
+                  {order.status === 'completed' && order.completedAt && (
+                    <div className="flex items-center gap-1.5 text-brand text-[10px] font-bold bg-brand/10 px-2 py-1 rounded-lg animate-pulse">
+                      <Timer size={12} />
+                      <span>{Math.ceil((3 * 60 * 1000 - (Date.now() - order.completedAt)) / 1000)}s</span>
+                    </div>
+                  )}
                   
                   <div className="flex gap-2">
                     {order.status === 'pending' && (
