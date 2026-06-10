@@ -1,56 +1,59 @@
-const Order = require('../models/Order');
-const Cart = require('../models/Cart');
-const MenuItem = require('../models/MenuItem');
-const Inventory = require('../models/Inventory');
+const { supabase } = require('../config/supabase');
+const { toApi, throwIfError } = require('../utils/supabaseHelpers');
+
+const ORDER_SELECT = `
+  id,user_id,total_amount,token_number,status,payment_status,created_at,
+  user:users!orders_user_id_fkey(id,name,email),
+  order_items(id,quantity,price,menu_item_id,menu_item:menu_items(id,name,description,image,price))
+`;
+
+function formatOrder(order, includeUser = false) {
+  const result = toApi({
+    id: order.id,
+    user_id: order.user_id,
+    total_amount: order.total_amount,
+    token_number: order.token_number,
+    status: order.status,
+    payment_status: order.payment_status,
+    created_at: order.created_at
+  });
+  result.items = (order.order_items || []).map(item => ({
+    _id: item.id,
+    id: item.id,
+    quantity: item.quantity,
+    price: Number(item.price),
+    menuItemId: toApi(item.menu_item || { id: item.menu_item_id })
+  }));
+  if (includeUser) result.userId = toApi(order.user || { id: order.user_id });
+  return result;
+}
+
+async function fetchOrder(id, includeUser = false) {
+  const { data, error } = await supabase.from('orders').select(ORDER_SELECT).eq('id', id).single();
+  throwIfError(error);
+  return formatOrder(data, includeUser);
+}
 
 exports.placeOrder = async (req, res, next) => {
   try {
-    const cart = await Cart.findOne({ userId: req.user.id }).populate('items.menuItemId');
-    if (!cart || cart.items.length === 0) {
-      return res.status(400).json({ success: false, message: 'Cart is empty' });
-    }
-    
-    // Filter out items where menuItemId is missing/deleted from the database
-    const validItems = cart.items.filter(item => item && item.menuItemId);
-    if (validItems.length === 0) {
-      return res.status(400).json({ success: false, message: 'Cart contains no valid menu items' });
-    }
-
-    const orderItems = validItems.map(item => ({
-      menuItemId: item.menuItemId._id,
-      quantity: item.quantity,
-      price: item.menuItemId.price || 0
-    }));
-    const tokenNumber = Math.floor(1000 + Math.random() * 9000);
-    const order = await Order.create({
-      userId: req.user.id,
-      items: orderItems,
-      totalAmount: cart.totalPrice,
-      tokenNumber,
-      status: 'Pending'
-    });
-    for (const item of validItems) {
-      if (item.menuItemId.name) {
-        const inventory = await Inventory.findOne({ itemName: item.menuItemId.name });
-        if (inventory) {
-          inventory.quantity -= item.quantity;
-          await inventory.save();
-        }
-      }
-    }
-    await Cart.findOneAndDelete({ userId: req.user.id });
-    res.status(201).json({ success: true, data: order });
+    const { data, error } = await supabase.rpc('place_order_from_cart', { p_user_id: req.user.id });
+    throwIfError(error);
+    res.status(201).json({ success: true, data: await fetchOrder(data) });
   } catch (err) {
+    if (err.message === 'Cart is empty') err.statusCode = 400;
     next(err);
   }
 };
 
-
 exports.getMyOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find({ userId: req.user.id })
-      .populate('items.menuItemId')
-      .sort('-createdAt');
+    const { data, error } = await supabase
+      .from('orders')
+      .select(ORDER_SELECT)
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+    throwIfError(error);
+    const orders = data.map(order => formatOrder(order));
     res.status(200).json({ success: true, count: orders.length, data: orders });
   } catch (err) {
     next(err);
@@ -59,26 +62,12 @@ exports.getMyOrders = async (req, res, next) => {
 
 exports.updateOrderStatus = async (req, res, next) => {
   try {
-    const originalOrder = await Order.findById(req.params.id).populate('items.menuItemId');
-    const order = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, {
-      new: true,
-      runValidators: true
+    const { error } = await supabase.rpc('set_order_status', {
+      p_order_id: req.params.id,
+      p_status: req.body.status
     });
-
-    if (req.body.status === 'Cancelled' && originalOrder && originalOrder.status !== 'Cancelled') {
-      const Inventory = require('../models/Inventory');
-      for (const item of originalOrder.items) {
-        if (item.menuItemId && item.menuItemId.name) {
-          const inventory = await Inventory.findOne({ itemName: item.menuItemId.name });
-          if (inventory) {
-            inventory.quantity += item.quantity;
-            await inventory.save();
-          }
-        }
-      }
-    }
-
-    res.status(200).json({ success: true, data: order });
+    throwIfError(error);
+    res.status(200).json({ success: true, data: await fetchOrder(req.params.id, true) });
   } catch (err) {
     next(err);
   }
@@ -86,10 +75,12 @@ exports.updateOrderStatus = async (req, res, next) => {
 
 exports.getAllOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find({})
-      .populate('userId', 'name')
-      .populate('items.menuItemId', 'name')
-      .sort('-createdAt');
+    const { data, error } = await supabase
+      .from('orders')
+      .select(ORDER_SELECT)
+      .order('created_at', { ascending: false });
+    throwIfError(error);
+    const orders = data.map(order => formatOrder(order, true));
     res.status(200).json({ success: true, count: orders.length, data: orders });
   } catch (err) {
     next(err);

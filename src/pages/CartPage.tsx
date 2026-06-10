@@ -28,7 +28,7 @@ export const CartPage = () => {
 
     const token = localStorage.getItem('canteenly_token');
     try {
-      // 1. Synchronize the client's React cart to MongoDB
+      // 1. Synchronize the client's React cart to Supabase
       const syncRes = await fetch('/api/cart/sync', {
         method: 'POST',
         headers: {

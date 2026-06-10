@@ -2,5 +2,5 @@
   "name": "Canteenly - Smart Canteen Management",
   "description": "A premium, futuristic canteen management system with student and admin portals, featuring AI-powered food recommendations, real-time order tracking, and advanced analytics.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

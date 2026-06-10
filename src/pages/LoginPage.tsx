@@ -32,7 +32,7 @@ export const LoginPage = () => {
       console.error("Backend login failed, trying register fallback", err);
     }
 
-    // Fallback: register the user in clean MongoDB database
+    // Fallback: register the user in Supabase
     try {
       const role = loginEmail.toLowerCase() === 'admin@canteenly.com' ? 'admin' : 'student';
       const name = role === 'admin' ? 'Admin User' : 'Student User';

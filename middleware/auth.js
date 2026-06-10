@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { supabase } = require('../config/supabase');
+const { toApi } = require('../utils/supabaseHelpers');
 
 // Protect routes
 exports.protect = async (req, res, next) => {
@@ -18,7 +19,9 @@ exports.protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id);
+    const { data, error } = await supabase.from('users').select('*').eq('id', decoded.id).single();
+    if (error || !data || !data.is_active) throw error || new Error('User not found');
+    req.user = toApi(data);
     next();
   } catch (err) {
     return res.status(401).json({ success: false, message: 'Not authorized' });

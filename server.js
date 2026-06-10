@@ -1,16 +1,14 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const connectDB = require('./config/db');
-const errorHandler = require('./middleware/error');
 
 // Load env vars
 const path = require('path');
 // Load env vars from root
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-// Connect to database
-connectDB();
+const connectDB = require('./config/db');
+const errorHandler = require('./middleware/error');
 
 const app = express();
 
@@ -28,7 +26,6 @@ const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const aiRoutes = require('./routes/aiRoutes');
 
 // Mount routers
 app.use('/api/auth', authRoutes);
@@ -37,7 +34,6 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/ai', aiRoutes);
 
 // Error handler middleware
 app.use(errorHandler);
@@ -45,9 +41,9 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
+  connectDB().finally(() => app.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-  });
+  }));
 }
 
 module.exports = app;
